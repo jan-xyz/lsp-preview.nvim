@@ -1,3 +1,7 @@
+-- BELOW IS A COPY OF THE NEOVIM IMPLEMENTATION
+-- THE ONLY MODIFICATION IS TO PASS IN A CUSTOM FUNCTION TO HANDLE ACTIONS
+-- PLEASE DO NOT MODIFY APART FROM KEEPING IT UP-TO-DATE WITH UPSTREAM
+-- https://github.com/neovim/neovim/blob/v0.9.5/runtime/lua/vim/lsp/buf.lua
 local api = vim.api
 local validate = vim.validate
 local util = require("vim.lsp.util")
@@ -102,24 +106,23 @@ local function on_code_action_results(results, ctx, options)
 		--
 		local client = assert(vim.lsp.get_client_by_id(action_tuple[1]))
 		local action = action_tuple[2]
+		-- CUSTOM MODIFICATION
+		local local_apply_action = options.apply_action or apply_action
 		if not action.edit and client and vim.tbl_get(client.server_capabilities, "codeActionProvider", "resolveProvider")
 		then
 			client.request("codeAction/resolve", action, function(err, resolved_action)
 				if err then
 					if action.command then
-						-- apply_action(action, client)
-						vim.notify(vim.inspect(action.edit))
+						local_apply_action(action, client)
 					else
 						vim.notify(err.code .. ": " .. err.message, vim.log.levels.ERROR)
 					end
 				else
-					-- apply_action(resolved_action, client)
-					vim.notify(vim.inspect(resolved_action.edit))
+					local_apply_action(resolved_action, client)
 				end
 			end)
 		else
-			-- apply_action(action, client)
-			vim.notify(vim.inspect(action.edit))
+			local_apply_action(action, client)
 		end
 	end
 
@@ -140,9 +143,6 @@ local function on_code_action_results(results, ctx, options)
 	}, on_user_choice)
 end
 
--- BELOW IS A COPY OF THE NEOVIM IMPLEMENTATION
--- PLEASE DO NOT MODIFY APART FROM KEEPING IT UP-TO-DATE WITH UPSTREAM
--- https://github.com/neovim/neovim/blob/v0.9.5/runtime/lua/vim/lsp/buf.lua
 
 
 --- Requests code actions from all clients and calls the handler exactly once
