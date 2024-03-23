@@ -9,9 +9,10 @@ implemented:
 
 ## TODO
 
-* implement selection
-* break-down by edit and not by file
-* implement rename
+* [x] implement selection
+* [ ] auto-select all changes
+* [ ] break-down by edit and not by file
+* [ ] implement rename
 
 ## Inspired by
 

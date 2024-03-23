@@ -1,6 +1,9 @@
 -- This module is mostly taken from github.com/aznhe21/actions-preview.nvim
 -- The work done by the original author safed me a lot of time, and many thanks to them
 -- for their work <3
+
+local action_state = require("telescope.actions.state")
+
 local M = {}
 
 local default_make_value = function(entry)
@@ -45,6 +48,21 @@ end
 function M.is_supported()
 	local ok, _ = pcall(require, "telescope")
 	return ok
+end
+
+local get_selected_diffs = function(prompt_bufnr, smart)
+	smart = vim.F.if_nil(smart, true)
+	local selected = {}
+	local current_picker = action_state.get_current_picker(prompt_bufnr)
+	local selections = current_picker:get_multi_selection()
+	if smart and vim.tbl_isempty(selections) then
+		table.insert(selected, action_state.get_selected_entry())
+	else
+		for _, selection in ipairs(selections) do
+			table.insert(selected, selection)
+		end
+	end
+	return selected
 end
 
 function M.apply_action(config, entries)
@@ -180,19 +198,17 @@ function M.apply_action(config, entries)
 		sorter = conf.generic_sorter(opts),
 		attach_mappings = function(prompt_bufnr)
 			actions.select_default:replace(function()
-				local selection = state.get_selected_entry()
-				actions.close(prompt_bufnr)
-				if not selection then
-					return
-				end
+				local selections = get_selected_diffs(prompt_bufnr, true)
 
-				selection.value.action:apply()
+				actions.close(prompt_bufnr)
+				vim.notify(vim.inspect(selections))
+
+				-- selection.value.entry:apply()
 			end)
 
 			return true
 		end,
-	})
-			:find()
+	}):find()
 end
 
 return M
