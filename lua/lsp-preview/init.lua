@@ -9,6 +9,7 @@ function M.setup(_)
 end
 
 local function apply_action(action, client)
+	vim.notify(vim.inspect(action))
 	local changes = action.edit and lDiff.get_changes(action.edit, client.offset_encoding)
 	lTelescope.apply_action({}, changes)
 end
@@ -16,7 +17,8 @@ end
 M.code_action = function(opts)
 	opts = opts or {}
 	opts.apply_action = apply_action
-	opts.diff = { ctxlen = 3 }
+	opts.apply = true -- skip the vim.ui.select when there is only one action
+	opts.diff = { ctxlen = 20 }
 
 	lAction.code_action(opts)
 end

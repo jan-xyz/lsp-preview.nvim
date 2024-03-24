@@ -1,150 +1,209 @@
 -- This module is mostly taken from github.com/aznhe21/actions-preview.nvim
 -- The work done by the original author safed me a lot of time, and many thanks to them
 -- for their work <3
+
+local lEdits = require("lsp-preview.buffer_edits")
 local M = {}
 
-local Change = {}
-M.Changes = Change
+------------------
+--- Rename ------
+------------------
 
-function Change.new(change)
+---@class Rename
+---@field change any TODO: specify the correct type
+---@field offset_encoding string
+---@field old_path string
+---@field new_path string
+local Rename = {}
+
+---@return Rename
+function Rename.new(change, offset_encoding)
 	return setmetatable({
 		change = change,
-	}, { __index = Change })
+		old_path = vim.fn.fnamemodify(vim.uri_to_fname(change.oldUri), ":."),
+		new_path = vim.fn.fnamemodify(vim.uri_to_fname(change.newUri), ":."),
+		offset_encoding = offset_encoding,
+	}, { __index = Rename })
 end
 
-function Change:title(opts)
-	return self.change.path
+---@return string
+function Rename:title()
+	return "Rename: " .. self.change.path
 end
 
-function Change:preview(opts)
-	opts = vim.tbl_extend("force", {
-		pseudo_args = "--git",
-	}, opts or {})
-
-	local change = self.change
+---@return { text: string, syntax: string } previewObject # the preview object used for backends
+function Rename:preview(opts)
+	---@type string
 	local diff = ""
-	-- imitate git diff
-	if change.kind == "rename" then
-		diff = diff .. string.format("diff %s a/%s b/%s\n", opts.pseudo_args, change.old_path, change.new_path)
-		diff = diff .. string.format("rename from %s\n", change.old_path)
-		diff = diff .. string.format("rename to %s\n", change.new_path)
-		diff = diff .. "\n"
-	elseif change.kind == "create" then
-		diff = diff .. string.format("diff %s a/%s b/%s\n", opts.pseudo_args, change.path, change.path)
-		-- delta needs file mode
-		diff = diff .. "new file mode 100644\n"
-		-- diff-so-fancy needs index
-		diff = diff .. "index 0000000..fffffff\n"
-		diff = diff .. "\n"
-	elseif change.kind == "delete" then
-		diff = diff .. string.format("diff %s a/%s b/%s\n", opts.pseudo_args, change.path, change.path)
-		diff = diff .. string.format("--- a/%s\n", change.path)
-		diff = diff .. "+++ /dev/null\n"
-		diff = diff .. "\n"
-	elseif change.kind == "edit" then
-		diff = diff .. string.format("diff %s a/%s b/%s\n", opts.pseudo_args, change.path, change.path)
-		diff = diff .. string.format("--- a/%s\n", change.path)
-		diff = diff .. string.format("+++ b/%s\n", change.path)
-		diff = diff .. vim.trim(vim.diff(change.old, change.new, opts.diff or {})) .. "\n"
-		diff = diff .. "\n"
-	end
+
+	diff = diff .. string.format("diff --git a/%s b/%s\n", self.old_path, self.new_path)
+	diff = diff .. string.format("rename from %s\n", self.old_path)
+	diff = diff .. string.format("rename to %s\n", self.new_path)
+	diff = diff .. "\n"
+
 	return { text = diff, syntax = "diff" }
 end
 
--- TODO: Should this be the `new` function?
+------------------
+--- Create ------
+------------------
+
+---@class Create
+---@field change any TODO: specify the correct type
+---@field offset_encoding string
+---@field path string
+local Create = {}
+
+---@return Create
+function Create.new(change, offset_encoding)
+	return setmetatable({
+		change = change,
+		path = vim.fn.fnamemodify(vim.uri_to_fname(change.uri), ":."),
+		offset_encoding = offset_encoding,
+	}, { __index = Create })
+end
+
+---@return string
+function Create:title()
+	return "Create: " .. self.change.path
+end
+
+---@return { text: string, syntax: string } previewObject # the preview object used for backends
+function Create:preview(opts)
+	---@type string
+	local diff = ""
+
+	diff = diff .. string.format("diff --git a/%s b/%s\n", self.path, self.path)
+	-- delta needs file mode
+	diff = diff .. "new file mode 100644\n"
+	-- diff-so-fancy needs index
+	diff = diff .. "index 0000000..fffffff\n"
+	diff = diff .. "\n"
+
+	return { text = diff, syntax = "diff" }
+end
+
+------------------
+--- Delete ------
+------------------
+
+---@class Delete
+---@field change any TODO: specify the correct type
+---@field offset_encoding string
+---@field path string
+local Delete = {}
+
+---@return Delete
+function Delete.new(change, offset_encoding)
+	return setmetatable({
+		change = change,
+		path = vim.fn.fnamemodify(vim.uri_to_fname(change.uri), ":."),
+		offset_encoding = offset_encoding,
+	}, { __index = Delete })
+end
+
+---@return string
+function Delete:title()
+	return "Delete: " .. self.change.path
+end
+
+---@return { text: string, syntax: string } previewObject # the preview object used for backends
+function Delete:preview(opts)
+	---@type string
+	local diff = ""
+
+	diff = diff .. string.format("diff --git a/%s b/%s\n", self.path, self.path)
+	diff = diff .. string.format("--- a/%s\n", self.path)
+	diff = diff .. "+++ /dev/null\n"
+	diff = diff .. "\n"
+
+	return { text = diff, syntax = "diff" }
+end
+
+------------------
+--- Edit ------
+------------------
+
+---@class Edit
+---@field change any TODO: specify the correct type; is it needed for edits?
+---@field uri string
+---@field edits table
+---@field path string
+---@field old_text string
+---@field new_text string
+---@field offset_encoding string
+local Edit = {}
+
+---@param change any
+---@param uri string
+---@param edits any
+---@param offset_encoding string
+---@return Edit
+function Edit.new(change, uri, edits, offset_encoding)
+	local path = vim.fn.fnamemodify(vim.uri_to_fname(uri), ":.")
+	local bufnr = vim.uri_to_bufnr(uri)
+	local old_text, new_text = lEdits.edit_buffer_text(edits, bufnr, offset_encoding)
+
+	return setmetatable({
+		change = change,
+		uri = uri,
+		edits = edits,
+		path = path,
+		old_text = old_text,
+		new_text = new_text,
+		offset_encoding = offset_encoding,
+	}, { __index = Edit })
+end
+
+---@return string
+function Edit:title()
+	return "Edit: " .. self.path
+end
+
+---@return { text: string, syntax: string } previewObject # the preview object used for backends
+function Edit:preview(opts)
+	opts = opts or {}
+
+	---@type string
+	local diff = ""
+
+	---@type string
+	local text_diff = vim.diff(self.old_text, self.new_text, opts.diff or {}) or ""
+
+	diff = diff .. string.format("diff --git a/%s b/%s\n", self.path, self.path)
+	diff = diff .. string.format("--- a/%s\n", self.path)
+	diff = diff .. string.format("+++ b/%s\n", self.path)
+	diff = diff .. vim.trim(text_diff) .. "\n"
+	diff = diff .. "\n"
+
+	return { text = diff, syntax = "diff" }
+end
+
+------------------------------------------------------------
+
+
+---@return table
 function M.get_changes(workspace_edit, offset_encoding)
-	local function get_lines(bufnr)
-		vim.fn.bufload(bufnr)
-		return vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-	end
-
-	local function get_eol(bufnr)
-		local ff = vim.api.nvim_buf_get_option(bufnr, "fileformat")
-		if ff == "dos" then
-			return "\r\n"
-		elseif ff == "unix" then
-			return "\n"
-		elseif ff == "mac" then
-			return "\r"
-		else
-			error("invalid fileformat")
-		end
-	end
-
-	local function apply_text_edits(text_edits, lines, offset_encoding)
-		local temp_buf = vim.api.nvim_create_buf(false, true)
-		vim.api.nvim_buf_set_lines(temp_buf, 0, -1, false, lines)
-		vim.lsp.util.apply_text_edits(text_edits, temp_buf, offset_encoding)
-		local new_lines = vim.api.nvim_buf_get_lines(temp_buf, 0, -1, false)
-		vim.api.nvim_buf_delete(temp_buf, { force = true })
-		return new_lines
-	end
-
-
-	local function edit_buffer_text(text_edits, bufnr, offset_encoding)
-		local eol = get_eol(bufnr)
-
-		local lines = get_lines(bufnr)
-		local new_lines = apply_text_edits(text_edits, lines, offset_encoding)
-		return table.concat(lines, eol) .. eol, table.concat(new_lines, eol) .. eol
-	end
+	vim.notify(vim.inspect(workspace_edit))
 	local changes = {}
 
 	if workspace_edit.documentChanges then
 		for _, change in ipairs(workspace_edit.documentChanges) do
-			local changeSet = {}
 			if change.kind == "rename" then
-				local old_path = vim.fn.fnamemodify(vim.uri_to_fname(change.oldUri), ":.")
-				local new_path = vim.fn.fnamemodify(vim.uri_to_fname(change.newUri), ":.")
-
-				changeSet = {
-					kind = "rename",
-					old_path = old_path,
-					new_path = new_path,
-				}
+				table.insert(changes, Rename.new(change, offset_encoding))
 			elseif change.kind == "create" then
-				local path = vim.fn.fnamemodify(vim.uri_to_fname(change.uri), ":.")
-
-				changeSet = {
-					kind = "create",
-					path = path,
-				}
+				table.insert(changes, Create.new(change, offset_encoding))
 			elseif change.kind == "delete" then
-				local path = vim.fn.fnamemodify(vim.uri_to_fname(change.uri), ":.")
-
-				changeSet = {
-					kind = "delete",
-					path = path,
-				}
+				table.insert(changes, Delete.new(change, offset_encoding))
 			elseif change.kind then
 				-- do nothing
 			else
-				local uri = change.textDocument.uri
-				local path = vim.fn.fnamemodify(vim.uri_to_fname(uri), ":.")
-				local bufnr = vim.uri_to_bufnr(uri)
-				local old, new = edit_buffer_text(change.edits, bufnr, offset_encoding)
-
-				changeSet = {
-					kind = "edit",
-					path = path,
-					old = old,
-					new = new,
-				}
+				table.insert(changes, Edit.new(change, change.textDocument.uri, change.edits, offset_encoding))
 			end
-			table.insert(changes, Change.new(changeSet))
 		end
 	elseif workspace_edit.changes and not vim.tbl_isempty(workspace_edit.changes) then
 		for uri, edits in pairs(workspace_edit.changes) do
-			local path = vim.fn.fnamemodify(vim.uri_to_fname(uri), ":.")
-			local bufnr = vim.uri_to_bufnr(uri)
-			local old, new = edit_buffer_text(edits, bufnr, offset_encoding)
-
-			table.insert(changes, Change.new({
-				kind = "edit",
-				path = path,
-				old = old,
-				new = new,
-			}))
+			table.insert(changes, Edit.new({}, uri, edits, offset_encoding))
 		end
 	end
 

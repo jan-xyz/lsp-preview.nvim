@@ -73,6 +73,7 @@ function M.apply_action(config, entries)
 	local finders = require("telescope.finders")
 	local conf = require("telescope.config").values
 	local utils = require("telescope.utils")
+	local putils = require("telescope.previewers.utils")
 
 	local opts = vim.deepcopy(config) or require("telescope.themes").get_dropdown()
 
@@ -102,101 +103,107 @@ function M.apply_action(config, entries)
 	local buffers = {}
 	local term_ids = {}
 
+	local previewer = Previewer:new({
+		title = "Code Action Preview",
+		setup = function(_self)
+			return {}
+		end,
+		teardown = function(self)
+			if not self.state then
+				return
+			end
+
+			self.state.winid = nil
+			self.state.bufnr = nil
+
+			for _, bufnr in ipairs(buffers) do
+				local term_id = term_ids[bufnr]
+				if term_id and job_is_running(term_id) then
+					vim.fn.jobstop(term_id)
+				end
+				utils.buf_delete(bufnr)
+			end
+
+			buffers = {}
+			term_ids = {}
+		end,
+		preview_fn = function(self, entry, status)
+			local preview_winid = status.layout and status.layout.preview and status.layout.preview.winid or
+					status.preview_win
+
+			local do_preview = false
+			local bufnr = buffers[entry.index]
+			if not bufnr then
+				bufnr = vim.api.nvim_create_buf(false, true)
+				buffers[entry.index] = bufnr
+				do_preview = true
+
+				vim.api.nvim_win_set_option(preview_winid, "winhl", "Normal:TelescopePreviewNormal")
+				vim.api.nvim_win_set_option(preview_winid, "signcolumn", "no")
+				vim.api.nvim_win_set_option(preview_winid, "foldlevel", 100)
+				vim.api.nvim_win_set_option(preview_winid, "wrap", false)
+				vim.api.nvim_win_set_option(preview_winid, "scrollbind", false)
+			end
+
+			utils.win_set_buf_noautocmd(preview_winid, bufnr)
+			self.state.winid = preview_winid
+			self.state.bufnr = bufnr
+
+			if do_preview then
+				local preview = entry.value.entry:preview(opts)
+				if preview and preview.cmdline then
+					vim.api.nvim_buf_call(bufnr, function()
+						term_ids[bufnr] = vim.fn.termopen(preview.cmdline)
+					end)
+				else
+					preview = preview or { syntax = "", text = "preview not available" }
+
+					vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(preview.text, "\n", true))
+					putils.highlighter(bufnr, preview.syntax, opts)
+				end
+			end
+		end,
+		scroll_fn = function(self, direction)
+			if not self.state then
+				return
+			end
+
+			local count = math.abs(direction)
+			local term_id = term_ids[self.state.bufnr]
+			if term_id and job_is_running(term_id) then
+				local input = direction > 0 and "d" or "u"
+
+				local termcode = vim.api.nvim_replace_termcodes(count .. input, true, false, true)
+				vim.fn.chansend(term_id, termcode)
+			else
+				local input = direction > 0 and [[]] or [[]]
+
+				vim.api.nvim_win_call(self.state.winid, function()
+					vim.cmd([[normal! ]] .. count .. input)
+				end)
+			end
+		end,
+	})
+
+	local finder = finders.new_table({
+		results = values,
+		entry_maker = function(value)
+			return {
+				display = make_display,
+				ordinal = value.index .. value.title,
+				value = value,
+			}
+		end,
+	})
+
 	pickers.new(opts, {
 		prompt_title = "Code Actions",
-		previewer = Previewer:new({
-			title = "Code Action Preview",
-			setup = function(_self)
-				return {}
-			end,
-			teardown = function(self)
-				if not self.state then
-					return
-				end
-
-				self.state.winid = nil
-				self.state.bufnr = nil
-
-				for _, bufnr in ipairs(buffers) do
-					local term_id = term_ids[bufnr]
-					if term_id and job_is_running(term_id) then
-						vim.fn.jobstop(term_id)
-					end
-					utils.buf_delete(bufnr)
-				end
-
-				buffers = {}
-				term_ids = {}
-			end,
-			preview_fn = function(self, entry, status)
-				local preview_winid = status.layout and status.layout.preview and status.layout.preview.winid or
-						status.preview_win
-
-				local do_preview = false
-				local bufnr = buffers[entry.index]
-				if not bufnr then
-					bufnr = vim.api.nvim_create_buf(false, true)
-					buffers[entry.index] = bufnr
-					do_preview = true
-
-					vim.api.nvim_win_set_option(preview_winid, "winhl", "Normal:TelescopePreviewNormal")
-					vim.api.nvim_win_set_option(preview_winid, "signcolumn", "no")
-					vim.api.nvim_win_set_option(preview_winid, "foldlevel", 100)
-					vim.api.nvim_win_set_option(preview_winid, "wrap", false)
-					vim.api.nvim_win_set_option(preview_winid, "scrollbind", false)
-				end
-
-				utils.win_set_buf_noautocmd(preview_winid, bufnr)
-				self.state.winid = preview_winid
-				self.state.bufnr = bufnr
-
-				if do_preview then
-					local preview = entry.value.entry:preview(opts)
-					if preview and preview.cmdline then
-						vim.api.nvim_buf_call(bufnr, function()
-							term_ids[bufnr] = vim.fn.termopen(preview.cmdline)
-						end)
-					else
-						preview = preview or { syntax = "", text = "preview not available" }
-
-						vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(preview.text, "\n", true))
-						vim.api.nvim_buf_set_option(bufnr, "syntax", preview.syntax)
-					end
-				end
-			end,
-			scroll_fn = function(self, direction)
-				if not self.state then
-					return
-				end
-
-				local count = math.abs(direction)
-				local term_id = term_ids[self.state.bufnr]
-				if term_id and job_is_running(term_id) then
-					local input = direction > 0 and "d" or "u"
-
-					local termcode = vim.api.nvim_replace_termcodes(count .. input, true, false, true)
-					vim.fn.chansend(term_id, termcode)
-				else
-					local input = direction > 0 and [[]] or [[]]
-
-					vim.api.nvim_win_call(self.state.winid, function()
-						vim.cmd([[normal! ]] .. count .. input)
-					end)
-				end
-			end,
-		}),
-		finder = finders.new_table({
-			results = values,
-			entry_maker = function(value)
-				return {
-					display = make_display,
-					ordinal = value.index .. value.title,
-					value = value,
-				}
-			end,
-		}),
+		previewer = previewer,
+		finder = finder,
 		sorter = conf.generic_sorter(opts),
-		attach_mappings = function(prompt_bufnr)
+		attach_mappings = function(prompt_bufnr, map)
+			map("i", "<c-space>", actions.select_all)
+
 			actions.select_default:replace(function()
 				local selections = get_selected_diffs(prompt_bufnr, true)
 
