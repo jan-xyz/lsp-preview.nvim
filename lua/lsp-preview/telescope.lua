@@ -8,6 +8,11 @@ local action_state = require("telescope.actions.state")
 ---@field title fun(self): string
 ---@field preview fun(): {text: string, syntax: string}
 
+---@class Value
+---@field title string
+---@field index string
+---@field entry Previewable
+
 local M = {}
 
 ---@param entry Previewable
@@ -17,17 +22,16 @@ local default_make_value = function(entry)
 	}
 end
 
+---@param values Value[]
 local default_make_make_display = function(values)
 	local entry_display = require("telescope.pickers.entry_display")
 	local strings = require("plenary.strings")
 
 	local index_width = 0
 	local title_width = 0
-	local client_width = 0
 	for _, value in ipairs(values) do
 		index_width = math.max(index_width, strings.strdisplaywidth(value.index))
 		title_width = math.max(title_width, strings.strdisplaywidth(value.title))
-		client_width = math.max(client_width, strings.strdisplaywidth(value.client_name))
 	end
 
 	local displayer = entry_display.create({
@@ -35,7 +39,6 @@ local default_make_make_display = function(values)
 		items = {
 			{ width = index_width + 1 },
 			{ width = title_width },
-			{ width = client_width },
 		},
 	})
 	return function(entry)
@@ -76,7 +79,7 @@ function M.apply_action(opts, entries)
 	local putils = require("telescope.previewers.utils")
 
 	local make_value = default_make_value
-	---@type {title: string, index: integer, entry: Previewable}[]
+	---@type Value[]
 	local values = {}
 	for index, entry in ipairs(entries) do
 		local value = make_value(entry)
