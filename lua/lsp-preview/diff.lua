@@ -10,7 +10,7 @@ local M = {}
 ------------------
 
 ---@class Rename
----@field change any TODO: specify the correct type
+---@field change RenameFile
 ---@field offset_encoding string
 ---@field old_path string
 ---@field new_path string
@@ -28,7 +28,7 @@ end
 
 ---@return string
 function Rename:title()
-	return "Rename: " .. self.change.path
+	return "Rename: " .. self.change.oldUri
 end
 
 ---@return { text: string, syntax: string } previewObject # the preview object used for backends
@@ -49,7 +49,7 @@ end
 ------------------
 
 ---@class Create
----@field change any TODO: specify the correct type
+---@field change CreateFile
 ---@field offset_encoding string
 ---@field path string
 local Create = {}
@@ -65,7 +65,7 @@ end
 
 ---@return string
 function Create:title()
-	return "Create: " .. self.change.path
+	return "Create: " .. self.change.uri
 end
 
 ---@return { text: string, syntax: string } previewObject # the preview object used for backends
@@ -88,7 +88,7 @@ end
 ------------------
 
 ---@class Delete
----@field change any TODO: specify the correct type
+---@field change DeleteFile
 ---@field offset_encoding string
 ---@field path string
 local Delete = {}
@@ -104,7 +104,7 @@ end
 
 ---@return string
 function Delete:title()
-	return "Delete: " .. self.change.path
+	return "Delete: " .. self.change.uri
 end
 
 ---@return { text: string, syntax: string } previewObject # the preview object used for backends
@@ -125,7 +125,7 @@ end
 ------------------
 
 ---@class Edit
----@field change any TODO: specify the correct type; is it needed for edits?
+---@field change TextDocumentEdit
 ---@field uri string
 ---@field edits table
 ---@field path string
@@ -134,9 +134,9 @@ end
 ---@field offset_encoding string
 local Edit = {}
 
----@param change any
+---@param change TextDocumentEdit
 ---@param uri string
----@param edits any
+---@param edits TextEdit[]
 ---@param offset_encoding string
 ---@return Edit
 function Edit.new(change, uri, edits, offset_encoding)
