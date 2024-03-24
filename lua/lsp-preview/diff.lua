@@ -182,9 +182,9 @@ end
 ------------------------------------------------------------
 
 
+---@param workspace_edit WorkspaceEdit
 ---@return table
-function M.get_changes(workspace_edit, offset_encoding)
-	vim.notify(vim.inspect(workspace_edit))
+function M.get_diffs(workspace_edit, offset_encoding)
 	local changes = {}
 
 	if workspace_edit.documentChanges then

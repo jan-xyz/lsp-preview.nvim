@@ -1,4 +1,4 @@
-local lAction = require("lsp-preview.action")
+local lBuf = require("lsp-preview.buf")
 local lDiff = require("lsp-preview.diff")
 local lTelescope = require("lsp-preview.telescope")
 
@@ -8,9 +8,10 @@ function M.setup(_)
 
 end
 
+---@param action CodeAction
 local function apply_action(action, client)
 	vim.notify(vim.inspect(action))
-	local changes = action.edit and lDiff.get_changes(action.edit, client.offset_encoding)
+	local changes = action.edit and lDiff.get_diffs(action.edit, client.offset_encoding)
 	lTelescope.apply_action({}, changes)
 end
 
@@ -20,7 +21,7 @@ M.code_action = function(opts)
 	opts.apply = true -- skip the vim.ui.select when there is only one action
 	opts.diff = { ctxlen = 20 }
 
-	lAction.code_action(opts)
+	lBuf.code_action(opts)
 end
 
 return M
