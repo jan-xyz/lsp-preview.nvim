@@ -4,8 +4,13 @@
 
 local action_state = require("telescope.actions.state")
 
+---@class Previewable
+---@field title fun(self): string
+---@field preview fun(): {text: string, syntax: string}
+
 local M = {}
 
+---@param entry Previewable
 local default_make_value = function(entry)
 	return {
 		title = entry:title(),
@@ -45,11 +50,6 @@ local job_is_running = function(job_id)
 	return vim.fn.jobwait({ job_id }, 0)[1] == -1
 end
 
-function M.is_supported()
-	local ok, _ = pcall(require, "telescope")
-	return ok
-end
-
 local get_selected_diffs = function(prompt_bufnr, smart)
 	smart = vim.F.if_nil(smart, true)
 	local selected = {}
@@ -65,9 +65,9 @@ local get_selected_diffs = function(prompt_bufnr, smart)
 	return selected
 end
 
-function M.apply_action(config, entries)
+---@param entries Previewable[]
+function M.apply_action(opts, entries)
 	local actions = require("telescope.actions")
-	local state = require("telescope.actions.state")
 	local pickers = require("telescope.pickers")
 	local Previewer = require("telescope.previewers.previewer")
 	local finders = require("telescope.finders")
@@ -75,9 +75,8 @@ function M.apply_action(config, entries)
 	local utils = require("telescope.utils")
 	local putils = require("telescope.previewers.utils")
 
-	local opts = vim.deepcopy(config) or require("telescope.themes").get_dropdown()
-
-	local make_value = opts.make_value or default_make_value
+	local make_value = default_make_value
+	---@type {title: string, index: integer, entry: Previewable}[]
 	local values = {}
 	for index, entry in ipairs(entries) do
 		local value = make_value(entry)
@@ -98,7 +97,7 @@ function M.apply_action(config, entries)
 		)
 	end
 
-	local make_display = (opts.make_make_display or default_make_make_display)(values)
+	local make_display = default_make_make_display(values)
 
 	local buffers = {}
 	local term_ids = {}

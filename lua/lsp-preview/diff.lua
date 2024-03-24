@@ -9,7 +9,7 @@ local M = {}
 --- Rename ------
 ------------------
 
----@class Rename
+---@class Rename: Previewable
 ---@field change RenameFile
 ---@field offset_encoding string
 ---@field old_path string
@@ -50,7 +50,7 @@ end
 --- Create ------
 ------------------
 
----@class Create
+---@class Create: Previewable
 ---@field change CreateFile
 ---@field offset_encoding string
 ---@field path string
@@ -91,7 +91,7 @@ end
 --- Delete ------
 ------------------
 
----@class Delete
+---@class Delete: Previewable
 ---@field change DeleteFile
 ---@field offset_encoding string
 ---@field path string
@@ -130,7 +130,7 @@ end
 --- Edit ------
 ------------------
 
----@class Edit
+---@class Edit: Previewable
 ---@field change TextDocumentEdit
 ---@field uri string
 ---@field edits table
@@ -189,8 +189,9 @@ end
 
 
 ---@param workspace_edit WorkspaceEdit
----@return table
+---@return Previewable[]
 function M.get_diffs(workspace_edit, offset_encoding)
+	---@type Previewable[]
 	local changes = {}
 
 	if workspace_edit.documentChanges then

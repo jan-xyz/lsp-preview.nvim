@@ -10,16 +10,16 @@ end
 
 ---@param action CodeAction
 local function apply_action(action, client)
-	vim.notify(vim.inspect(action))
-	local changes = action.edit and lDiff.get_diffs(action.edit, client.offset_encoding)
-	lTelescope.apply_action({}, changes)
+	local changes = lDiff.get_diffs(action.edit, client.offset_encoding)
+	local opts = {}
+	opts.diff = { ctxlen = 20 } -- provide a large diff context view
+	lTelescope.apply_action(opts, changes)
 end
 
 M.code_action = function(opts)
 	opts = opts or {}
 	opts.apply_action = apply_action
 	opts.apply = true -- skip the vim.ui.select when there is only one action
-	opts.diff = { ctxlen = 20 }
 
 	lBuf.code_action(opts)
 end
