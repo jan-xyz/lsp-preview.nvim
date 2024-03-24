@@ -16,6 +16,8 @@ local M = {}
 ---@field new_path string
 local Rename = {}
 
+---@param change RenameFile
+---@param offset_encoding string
 ---@return Rename
 function Rename.new(change, offset_encoding)
 	return setmetatable({
@@ -54,6 +56,8 @@ end
 ---@field path string
 local Create = {}
 
+---@param change CreateFile
+---@param offset_encoding string
 ---@return Create
 function Create.new(change, offset_encoding)
 	return setmetatable({
@@ -93,6 +97,8 @@ end
 ---@field path string
 local Delete = {}
 
+---@param change DeleteFile
+---@param offset_encoding string
 ---@return Delete
 function Delete.new(change, offset_encoding)
 	return setmetatable({
@@ -190,20 +196,24 @@ function M.get_diffs(workspace_edit, offset_encoding)
 	if workspace_edit.documentChanges then
 		for _, change in ipairs(workspace_edit.documentChanges) do
 			if change.kind == "rename" then
+				---@cast change RenameFile
 				table.insert(changes, Rename.new(change, offset_encoding))
 			elseif change.kind == "create" then
+				---@cast change CreateFile
 				table.insert(changes, Create.new(change, offset_encoding))
 			elseif change.kind == "delete" then
+				---@cast change DeleteFile
 				table.insert(changes, Delete.new(change, offset_encoding))
-			elseif change.kind then
-				-- do nothing
-			else
+			elseif not change.kind then
+				---@cast change TextDocumentEdit
 				table.insert(changes, Edit.new(change, change.textDocument.uri, change.edits, offset_encoding))
+			else
+				vim.notify("unknown change kind")
 			end
 		end
 	elseif workspace_edit.changes and not vim.tbl_isempty(workspace_edit.changes) then
 		for uri, edits in pairs(workspace_edit.changes) do
-			table.insert(changes, Edit.new({}, uri, edits, offset_encoding))
+			table.insert(changes, Edit.new({ edits = edits, textDocument = { uri = uri } }, uri, edits, offset_encoding))
 		end
 	end
 
