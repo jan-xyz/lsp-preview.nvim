@@ -10,12 +10,17 @@ function M.setup(_)
 
 end
 
+--- A function that creates a apply_function for the telescope picker.
+--- The picker can call this function with the selected changes from the picker
+--- which in turn filters the list of changes and applies them.
 ---@param action CodeAction
 ---@return fun(selected_indices: integer[])
 local function make_apply_action(ctx, action, client)
 	return function(selected_indices)
 		if action.edit then
 			-- TODO: this currently doesn't work with workspace changes
+			-- TODO: indices is brittle because it breaks once the sorting changes
+			-- TODO: enable picking individual edits.
 			local filteredChanges = {}
 			for _, index in ipairs(selected_indices) do
 				table.insert(filteredChanges, action.edit.documentChanges[index])
