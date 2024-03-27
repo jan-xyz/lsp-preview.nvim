@@ -189,25 +189,26 @@ end
 
 
 ---@param workspace_edit WorkspaceEdit
----@return Previewable[]
+---@return Previewable[], Previewable[]
 function M.get_changes(workspace_edit, offset_encoding)
 	---@type Previewable[]
+	local documentChanges = {}
 	local changes = {}
 
 	if workspace_edit.documentChanges then
-		for _, change in ipairs(workspace_edit.documentChanges) do
+		for index, change in ipairs(workspace_edit.documentChanges) do
 			if change.kind == "rename" then
 				---@cast change RenameFile
-				table.insert(changes, Rename.new(change, offset_encoding))
+				table.insert(documentChanges, Rename.new(change, offset_encoding))
 			elseif change.kind == "create" then
 				---@cast change CreateFile
-				table.insert(changes, Create.new(change, offset_encoding))
+				table.insert(documentChanges, Create.new(change, offset_encoding))
 			elseif change.kind == "delete" then
 				---@cast change DeleteFile
-				table.insert(changes, Delete.new(change, offset_encoding))
+				table.insert(documentChanges, Delete.new(change, offset_encoding))
 			elseif not change.kind then
 				---@cast change TextDocumentEdit
-				table.insert(changes, Edit.new(change, change.textDocument.uri, change.edits, offset_encoding))
+				table.insert(documentChanges, Edit.new(change, change.textDocument.uri, change.edits, offset_encoding))
 			else
 				vim.notify("unknown change kind")
 			end
@@ -218,7 +219,7 @@ function M.get_changes(workspace_edit, offset_encoding)
 		end
 	end
 
-	return changes
+	return documentChanges, changes
 end
 
 return M

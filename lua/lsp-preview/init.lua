@@ -9,15 +9,30 @@ local orig_apply_workspace_edits = util.apply_workspace_edit
 ---Filters the workspace edit for the selected hunks.
 ---@param workspace_edit WorkspaceEdit
 ---@param offset_encoding string
----@return fun(selected_indices: integer[])
+---@return fun(selected_indices: {value: Value}[])
 local make_apply_func = function(workspace_edit, offset_encoding)
 	return function(selected_indices)
-		local selected_edits = {}
-		for _, index in ipairs(selected_indices) do
-			local edit = workspace_edit.documentChanges[index]
-			table.insert(selected_edits, edit)
+		local documentChanges = {}
+		local changes = {}
+		for _, selection in ipairs(selected_indices) do
+			if selection.value.type == "documentChanges" then
+				local index = selection.value.index
+				local edit = workspace_edit.documentChanges[index]
+				table.insert(documentChanges, edit)
+			elseif selection.value.type == "changes" then
+				local entry = selection.value.entry
+				---@cast entry Edit
+				local edit = workspace_edit.changes[entry.uri]
+				changes[entry.uri] = edit
+			end
 		end
-		workspace_edit.documentChanges = selected_edits
+
+		if not vim.tbl_isempty(documentChanges) then
+			workspace_edit.documentChanges = documentChanges
+		end
+		if not vim.tbl_isempty(changes) then
+			workspace_edit.changes = changes
+		end
 		orig_apply_workspace_edits(workspace_edit, offset_encoding)
 	end
 end
@@ -28,14 +43,14 @@ end
 ---@param offset_encoding string
 ---@diagnostic disable-next-line: duplicate-set-field
 util.apply_workspace_edit = function(workspace_edit, offset_encoding)
-	local changes = lDiff.get_changes(workspace_edit, offset_encoding)
-	local opts = {}
-	opts.diff = { ctxlen = 20 } -- provide a large diff context view
+	local documentChanges, changes = lDiff.get_changes(workspace_edit, offset_encoding)
+	local opt = {}
+	opt.diff = { ctxlen = 20 } -- provide a large diff context view
 
 
 	-- TODO: doesn't work with workspaceChanges
 	-- TODO: brittle when the indices get out of order
-	lTelescope.apply_action(opts, changes, make_apply_func(workspace_edit, offset_encoding))
+	lTelescope.apply_action(opt, documentChanges, changes, make_apply_func(workspace_edit, offset_encoding))
 end
 
 

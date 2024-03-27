@@ -11,6 +11,7 @@ local action_state = require("telescope.actions.state")
 ---@class Value
 ---@field title string
 ---@field index string
+---@field type string
 ---@field entry Previewable
 
 local M = {}
@@ -60,20 +61,22 @@ end
 local get_selected_diffs = function(prompt_bufnr)
 	local selected = {}
 	local current_picker = action_state.get_current_picker(prompt_bufnr)
+	---@type Value[]
 	local selections = current_picker:get_multi_selection()
 	if vim.tbl_isempty(selections) then
-		table.insert(selected, action_state.get_selected_entry().index)
+		vim.notify("no change selected")
 	else
-		for index, _ in ipairs(selections) do
-			table.insert(selected, index)
+		for _, selection in ipairs(selections) do
+			table.insert(selected, selection)
 		end
 	end
 	return selected
 end
 
----@param entries Previewable[]
+---@param documentChanges Previewable[]
+---@param changes Previewable[]
 ---@param apply_selection fun(selected_indices: integer[])
-function M.apply_action(opts, entries, apply_selection)
+function M.apply_action(opts, documentChanges, changes, apply_selection)
 	local actions = require("telescope.actions")
 	local pickers = require("telescope.pickers")
 	local Previewer = require("telescope.previewers.previewer")
@@ -85,7 +88,7 @@ function M.apply_action(opts, entries, apply_selection)
 	local make_value = default_make_value
 	---@type Value[]
 	local values = {}
-	for index, entry in ipairs(entries) do
+	for index, entry in ipairs(documentChanges) do
 		local value = make_value(entry)
 		if type(value) ~= "table" then
 			error("'make_value' must return a table")
@@ -96,6 +99,22 @@ function M.apply_action(opts, entries, apply_selection)
 
 		value.index = index
 		value.entry = entry
+		value.type = "documentChanges"
+
+		table.insert(values, value)
+	end
+	for index, entry in ipairs(changes) do
+		local value = make_value(entry)
+		if type(value) ~= "table" then
+			error("'make_value' must return a table")
+		end
+		if value.title == nil then
+			error("'make_value' must return a table containing a field 'title'")
+		end
+
+		value.index = index
+		value.entry = entry
+		value.type = "changes"
 
 		table.insert(values, value)
 	end
@@ -108,6 +127,7 @@ function M.apply_action(opts, entries, apply_selection)
 	local previewer = Previewer:new({
 		title = "Code Action Preview",
 		setup = function(_self)
+			-- pre-select all changes on picker creation
 			local prompt_bufnr = vim.api.nvim_get_current_buf()
 			actions.select_all(prompt_bufnr)
 			return {}
@@ -207,7 +227,6 @@ function M.apply_action(opts, entries, apply_selection)
 				local selections = get_selected_diffs(prompt_bufnr)
 
 				actions.close(prompt_bufnr)
-				vim.notify(vim.inspect(selections))
 
 				apply_selection(selections)
 			end)
