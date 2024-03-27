@@ -3,6 +3,8 @@
 A plugin that allows previewing of all changes done to a workspace before
 applying.
 
+![example](./selection.png)
+
 ## Note
 
 This plugin affects all workspace edits coming from the language server.
@@ -49,7 +51,7 @@ If you're fine with the defaults, you're good to go after installation. If you
 want to tweak, call this function:
 
 ```lua
-require("dressing").setup({
+require("lsp-preview").setup({
  --Automatically apply code-actions if there is only 1 available.
  apply = true,
  --Configuration provided to vim.diff (see `:h vim.diff()`)
