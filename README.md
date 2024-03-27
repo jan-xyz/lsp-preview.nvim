@@ -54,6 +54,8 @@ want to tweak, call this function:
 require("lsp-preview").setup({
  --Automatically apply code-actions if there is only 1 available.
  apply = true,
+ --Preview all changes per default.
+ preview = false,
  --Configuration provided to vim.diff (see `:h vim.diff()`)
  diff = {
   ctxlen = 5,
