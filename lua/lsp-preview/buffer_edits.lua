@@ -1,10 +1,16 @@
 local M = {}
 
+---Returns the contents of a buffer.
+---@param bufnr integer
+---@return string[]
 local function get_lines(bufnr)
 	vim.fn.bufload(bufnr)
 	return vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 end
 
+---Returns the eol encoding of a buffer.
+---@param bufnr integer
+---@return string
 local function get_eol(bufnr)
 	local ff = vim.api.nvim_buf_get_option(bufnr, "fileformat")
 	if ff == "dos" then
@@ -18,6 +24,11 @@ local function get_eol(bufnr)
 	end
 end
 
+---Apply text edits to the lines of a file.
+---@param text_edits TextEdit[]
+---@param lines string[]
+---@param offset_encoding string
+---@return string[]
 local function apply_text_edits(text_edits, lines, offset_encoding)
 	local temp_buf = vim.api.nvim_create_buf(false, true)
 	vim.api.nvim_buf_set_lines(temp_buf, 0, -1, false, lines)
@@ -28,8 +39,12 @@ local function apply_text_edits(text_edits, lines, offset_encoding)
 end
 
 
----@ return string old
----@ return string new
+---Apply text edits to a buffer.
+---@param text_edits TextEdit[]
+---@param bufnr integer
+---@param offset_encoding string
+---@return string old
+---@return string new
 function M.edit_buffer_text(text_edits, bufnr, offset_encoding)
 	local eol = get_eol(bufnr)
 
