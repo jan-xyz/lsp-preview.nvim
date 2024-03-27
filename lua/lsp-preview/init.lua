@@ -1,63 +1,53 @@
-local lDiff = require("lsp-preview.diff")
-local lTelescope = require("lsp-preview.telescope")
+local lWorkspaceEdit = require("lsp-preview.workspace_edit")
 
 local util = require("vim.lsp.util")
 
-local orig_apply_workspace_edits = util.apply_workspace_edit
-
----Used as injection for the telescope picker to apply the selection.
----Filters the workspace edit for the selected hunks.
----@param workspace_edit WorkspaceEdit
----@param offset_encoding string
----@return fun(selected_indices: {value: Value}[])
-local make_apply_func = function(workspace_edit, offset_encoding)
-	return function(selected_indices)
-		local documentChanges = {}
-		local changes = {}
-		for _, selection in ipairs(selected_indices) do
-			if selection.value.type == "documentChanges" then
-				local index = selection.value.index
-				local edit = workspace_edit.documentChanges[index]
-				table.insert(documentChanges, edit)
-			elseif selection.value.type == "changes" then
-				local entry = selection.value.entry
-				---@cast entry Edit
-				local edit = workspace_edit.changes[entry.uri]
-				changes[entry.uri] = edit
-			end
-		end
-
-		if not vim.tbl_isempty(documentChanges) then
-			workspace_edit.documentChanges = documentChanges
-		end
-		if not vim.tbl_isempty(changes) then
-			workspace_edit.changes = changes
-		end
-		orig_apply_workspace_edits(workspace_edit, offset_encoding)
-	end
-end
-
-
----Overwriting the built-in function with the selection and preview capabilities
----@param workspace_edit WorkspaceEdit
----@param offset_encoding string
----@diagnostic disable-next-line: duplicate-set-field
-util.apply_workspace_edit = function(workspace_edit, offset_encoding)
-	local documentChanges, changes = lDiff.get_changes(workspace_edit, offset_encoding)
-	local opt = {}
-	opt.diff = { ctxlen = 20 } -- provide a large diff context view
-
-
-	-- TODO: doesn't work with workspaceChanges
-	-- TODO: brittle when the indices get out of order
-	lTelescope.apply_action(opt, documentChanges, changes, make_apply_func(workspace_edit, offset_encoding))
-end
-
-
 local M = {}
+
+local apply_workspace_edit = util.apply_workspace_edit
 
 function M.setup(_)
 
+end
+
+M.rename = function(new_name, opts)
+	opts = opts or {}
+
+	-- Reset it to the original before every operation in case of a failure.
+	---@diagnostic disable-next-line: duplicate-set-field
+	util.apply_workspace_edit = apply_workspace_edit
+
+	-- built-in behaviour if preview is disabled
+	if not opts.preview then
+		vim.lsp.buf.rename(new_name, opts)
+		return
+	end
+
+	---@diagnostic disable-next-line: duplicate-set-field
+	util.apply_workspace_edit = lWorkspaceEdit.make_apply_workspace_edit(apply_workspace_edit)
+
+	vim.lsp.buf.rename(new_name, opts)
+end
+
+M.code_action = function(opts)
+	opts = opts or {}
+
+	-- Reset it to the original before every operation in case of a failure.
+	---@diagnostic disable-next-line: duplicate-set-field
+	util.apply_workspace_edit = apply_workspace_edit
+
+	-- built-in behaviour if preview is disabled
+	if not opts.preview then
+		vim.lsp.buf.code_action(opts)
+		return
+	end
+
+	---@diagnostic disable-next-line: duplicate-set-field
+	util.apply_workspace_edit = lWorkspaceEdit.make_apply_workspace_edit(apply_workspace_edit)
+
+	-- automatically trigger Telescope when there is only one action
+	opts.apply = true
+	vim.lsp.buf.code_action(opts)
 end
 
 return M

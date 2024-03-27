@@ -13,8 +13,9 @@ applying.
 * [ ] break-down by edit and not by file
 * [ ] one buffer for all changes in a file, view-port shifts on selection
 * [ ] buffer contents updates based on selected changes
-* [ ] allow disabling the preview
+* [x] allow disabling the preview
 
 ## Inspired by
 
 * github.com/aznhe21/actions-preview.nvim
+* github.com/stevearc/dressing.nvim
