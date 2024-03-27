@@ -13,6 +13,7 @@ applying.
 * [ ] break-down by edit and not by file
 * [ ] one buffer for all changes in a file, view-port shifts on selection
 * [ ] buffer contents updates based on selected changes
+* [ ] Allow sorting list by token type that changes (e.g. var, class, comment)
 * [x] allow disabling the preview
 
 ## Inspired by

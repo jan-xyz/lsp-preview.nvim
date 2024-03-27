@@ -4,7 +4,7 @@ local lTelescope = require("lsp-preview.telescope")
 local M = {}
 
 ---Used as injection for the telescope picker to apply the selection.
----Filters the workspace edit for the selected hunks.
+---Filters the workspace edit for the selected hunks and applies it.
 ---@param workspace_edit WorkspaceEdit
 ---@param offset_encoding string
 ---@return fun(selected_indices: {value: Value}[])

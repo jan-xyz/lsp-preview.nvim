@@ -4,6 +4,7 @@ local util = require("vim.lsp.util")
 
 local M = {}
 
+-- The original workspace_edit from the std library of vim for backup and resets.
 local apply_workspace_edit = util.apply_workspace_edit
 
 function M.setup(_)
@@ -29,6 +30,12 @@ M.rename = function(new_name, opts)
 	vim.lsp.buf.rename(new_name, opts)
 end
 
+M.rename_preview = function(new_name, opts)
+	opts = opts or {}
+	opts.preview = true
+	M.rename(new_name, opts)
+end
+
 M.code_action = function(opts)
 	opts = opts or {}
 
@@ -48,6 +55,12 @@ M.code_action = function(opts)
 	-- automatically trigger Telescope when there is only one action
 	opts.apply = true
 	vim.lsp.buf.code_action(opts)
+end
+
+M.code_action_preview = function(opts)
+	opts = opts or {}
+	opts.preview = true
+	M.code_action(opts)
 end
 
 return M
