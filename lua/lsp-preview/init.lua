@@ -55,7 +55,6 @@ M.code_action = function(opts)
 	---@diagnostic disable-next-line: duplicate-set-field
 	util.apply_workspace_edit = lWorkspaceEdit.make_apply_workspace_edit(apply_workspace_edit)
 
-	-- automatically trigger Telescope when there is only one action
 	vim.lsp.buf.code_action(opts)
 end
 
