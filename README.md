@@ -72,6 +72,7 @@ require("dressing").setup({
   view-port shifts on selection, buffer contents updates based on selected
   changes
 * [ ] Allow sorting list by token type that changes (e.g. var, class, comment)
+* [ ] Add tests
 
 ## Inspired by
 
