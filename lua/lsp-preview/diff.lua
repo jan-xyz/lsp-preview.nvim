@@ -190,7 +190,7 @@ end
 
 ---@param workspace_edit WorkspaceEdit
 ---@return Previewable[]
-function M.get_diffs(workspace_edit, offset_encoding)
+function M.get_changes(workspace_edit, offset_encoding)
 	---@type Previewable[]
 	local changes = {}
 

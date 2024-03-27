@@ -1,69 +1,43 @@
-local lBuf = require("lsp-preview.buf")
 local lDiff = require("lsp-preview.diff")
 local lTelescope = require("lsp-preview.telescope")
 
 local util = require("vim.lsp.util")
 
-local M = {}
+local orig_apply_workspace_edits = util.apply_workspace_edit
 
-function M.setup(_)
-
-end
-
---- A function that creates a apply_function for the telescope picker.
---- The picker can call this function with the selected changes from the picker
---- which in turn filters the list of changes and applies them.
----@param action CodeAction
----@return fun(selected_indices: integer[])
-local function make_apply_action(ctx, action, client)
+local make_apply_func = function(workspace_edit, offset_encoding)
 	return function(selected_indices)
-		if action.edit then
-			-- TODO: this currently doesn't work with workspace changes
-			-- TODO: indices is brittle because it breaks once the sorting changes
-			-- TODO: enable picking individual edits.
-			local filteredChanges = {}
-			for _, index in ipairs(selected_indices) do
-				table.insert(filteredChanges, action.edit.documentChanges[index])
-			end
-			action.edit.documentChanges = filteredChanges
-			util.apply_workspace_edit(action.edit, client.offset_encoding)
+		local selected_edits = {}
+		for _, index in ipairs(selected_indices) do
+			local edit = workspace_edit.documentChanges[index]
+			table.insert(selected_edits, edit)
 		end
-		if action.command then
-			local command = type(action.command) == "table" and action.command or action
-			local fn = client.commands[command.command] or vim.lsp.commands[command.command]
-			if fn then
-				local enriched_ctx = vim.deepcopy(ctx)
-				enriched_ctx.client_id = client.id
-				fn(command, enriched_ctx)
-			else
-				-- Not using command directly to exclude extra properties,
-				-- see https://github.com/python-lsp/python-lsp-server/issues/146
-				local params = {
-					command = command.command,
-					arguments = command.arguments,
-					workDoneToken = command.workDoneToken,
-				}
-				client.request("workspace/executeCommand", params, nil, ctx.bufnr)
-			end
-		end
+		workspace_edit.documentChanges = selected_edits
+		orig_apply_workspace_edits(workspace_edit, offset_encoding)
 	end
 end
 
 
----@param action CodeAction
-local function apply_action(ctx, action, client)
-	local changes = lDiff.get_diffs(action.edit, client.offset_encoding)
+---Overwriting the built-in function with the selection and preview capabilities
+---@param workspace_edit WorkspaceEdit
+---@param offset_encoding string
+---@diagnostic disable-next-line: duplicate-set-field
+util.apply_workspace_edit = function(workspace_edit, offset_encoding)
+	local changes = lDiff.get_changes(workspace_edit, offset_encoding)
 	local opts = {}
 	opts.diff = { ctxlen = 20 } -- provide a large diff context view
-	lTelescope.apply_action(opts, changes, make_apply_action(ctx, action, client))
+
+
+	-- TODO: doesn't work with workspaceChanges
+	-- TODO: brittle when the indices get out of order
+	lTelescope.apply_action(opts, changes, make_apply_func(workspace_edit, offset_encoding))
 end
 
-M.code_action = function(opts)
-	opts = opts or {}
-	opts.apply_action = apply_action
-	opts.apply = true -- skip the vim.ui.select when there is only one action
 
-	lBuf.code_action(opts)
+local M = {}
+
+function M.setup(_)
+
 end
 
 return M
