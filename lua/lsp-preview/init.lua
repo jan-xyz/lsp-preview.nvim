@@ -9,6 +9,7 @@ local orig_apply_workspace_edits = util.apply_workspace_edit
 ---Filters the workspace edit for the selected hunks.
 ---@param workspace_edit WorkspaceEdit
 ---@param offset_encoding string
+---@return fun(selected_indices: integer[])
 local make_apply_func = function(workspace_edit, offset_encoding)
 	return function(selected_indices)
 		local selected_edits = {}
