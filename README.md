@@ -3,9 +3,17 @@
 A plugin that allows previewing of all changes done to a workspace before
 applying.
 
-Note: This plugin affects all workspace edits coming from the language server.
+## Note
+
+This plugin affects all workspace edits coming from the language server.
 Not all are currently supported, if you run into problems with other methods,
 please let me know.
+
+## Acknoweldgement
+
+The implementation of the diffs and the telescope picker
+are heavily inspired by [azsnhe21/actions-preview.nvim](github.com/aznhe21/actions-preview.nvim).
+Without the prework done there, I would not have been able to build this.
 
 ## Installation
 
@@ -14,6 +22,7 @@ lazy.nvim:
 ```lua
 {
   'jan-xyz/lsp-preview.nvim',
+  version = "*",
   opts = {},
 }
 ```
