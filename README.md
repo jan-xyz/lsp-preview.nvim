@@ -27,6 +27,22 @@ lazy.nvim:
 }
 ```
 
+```lua
+ -- Renam
+  vim.keymap.set("n", "<leader>r", require("lsp-preview").rename,
+   { noremap = true, buffer = bufnr, desc = "Rename symbol" })
+  vim.keymap.set("n", "<leader>R", require("lsp-preview").rename_preview,
+   { noremap = true, buffer = bufnr, desc = "Rename symbol (preview)" })
+
+ -- Code Action
+  vim.keymap.set({ "n", "v" }, "<leader>a", require("lsp-preview").code_action,
+   { noremap = true, buffer = bufnr, desc = "Perform code action" }
+  )
+  vim.keymap.set({ "n", "v" }, "<leader>A", require("lsp-preview").code_action_preview,
+   { noremap = true, buffer = bufnr, desc = "Perform code action (preview)" }
+  )
+```
+
 ## Configuration
 
 If you're fine with the defaults, you're good to go after installation. If you
