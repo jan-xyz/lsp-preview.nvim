@@ -6,7 +6,7 @@ local action_state = require("telescope.actions.state")
 
 ---@class Previewable
 ---@field title fun(self): string
----@field preview fun(): {text: string, syntax: string}
+---@field preview fun(self, opts): {text: string, syntax: string}
 
 ---@class Value
 ---@field title string
@@ -90,14 +90,10 @@ function M.apply_action(opts, entries)
 			error("'make_value' must return a table containing a field 'title'")
 		end
 
-		table.insert(
-			values,
-			vim.tbl_extend(
-				"force",
-				value,
-				{ index = index, entry = entry }
-			)
-		)
+		value.index = index
+		value.entry = entry
+
+		table.insert(values, value)
 	end
 
 	local make_display = default_make_make_display(values)
@@ -129,15 +125,16 @@ function M.apply_action(opts, entries)
 			buffers = {}
 			term_ids = {}
 		end,
+		---@param entry {value: Value}
 		preview_fn = function(self, entry, status)
 			local preview_winid = status.layout and status.layout.preview and status.layout.preview.winid or
 					status.preview_win
 
 			local do_preview = false
-			local bufnr = buffers[entry.index]
+			local bufnr = buffers[entry.value.index]
 			if not bufnr then
 				bufnr = vim.api.nvim_create_buf(false, true)
-				buffers[entry.index] = bufnr
+				buffers[entry.value.index] = bufnr
 				do_preview = true
 
 				vim.api.nvim_win_set_option(preview_winid, "winhl", "Normal:TelescopePreviewNormal")
@@ -153,16 +150,10 @@ function M.apply_action(opts, entries)
 
 			if do_preview then
 				local preview = entry.value.entry:preview(opts)
-				if preview and preview.cmdline then
-					vim.api.nvim_buf_call(bufnr, function()
-						term_ids[bufnr] = vim.fn.termopen(preview.cmdline)
-					end)
-				else
-					preview = preview or { syntax = "", text = "preview not available" }
+				preview = preview or { syntax = "", text = "preview not available" }
 
-					vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(preview.text, "\n", true))
-					putils.highlighter(bufnr, preview.syntax, opts)
-				end
+				vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(preview.text, "\n", { plain = true }))
+				putils.highlighter(bufnr, preview.syntax, opts)
 			end
 		end,
 		scroll_fn = function(self, direction)
