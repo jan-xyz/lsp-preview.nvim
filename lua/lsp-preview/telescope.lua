@@ -108,6 +108,8 @@ function M.apply_action(opts, entries, apply_selection)
 	local previewer = Previewer:new({
 		title = "Code Action Preview",
 		setup = function(_self)
+			local prompt_bufnr = vim.api.nvim_get_current_buf()
+			actions.select_all(prompt_bufnr)
 			return {}
 		end,
 		teardown = function(self)
@@ -199,7 +201,7 @@ function M.apply_action(opts, entries, apply_selection)
 		finder = finder,
 		sorter = conf.generic_sorter(opts),
 		attach_mappings = function(prompt_bufnr, map)
-			map("i", "<c-space>", actions.select_all)
+			map("i", "<c-a>", actions.toggle_all)
 
 			actions.select_default:replace(function()
 				local selections = get_selected_diffs(prompt_bufnr)
