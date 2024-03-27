@@ -62,8 +62,7 @@ local function on_code_action_results(results, ctx, options)
 	end
 
 	---@private
-	-- TODO: Make this handle multiple selected edits
-	local function apply_action(action, client)
+	local function apply_action(ctx2, action, client)
 		if action.edit then
 			util.apply_workspace_edit(action.edit, client.offset_encoding)
 		end
@@ -71,7 +70,7 @@ local function on_code_action_results(results, ctx, options)
 			local command = type(action.command) == "table" and action.command or action
 			local fn = client.commands[command.command] or vim.lsp.commands[command.command]
 			if fn then
-				local enriched_ctx = vim.deepcopy(ctx)
+				local enriched_ctx = vim.deepcopy(ctx2)
 				enriched_ctx.client_id = client.id
 				fn(command, enriched_ctx)
 			else
@@ -82,7 +81,7 @@ local function on_code_action_results(results, ctx, options)
 					arguments = command.arguments,
 					workDoneToken = command.workDoneToken,
 				}
-				client.request("workspace/executeCommand", params, nil, ctx.bufnr)
+				client.request("workspace/executeCommand", params, nil, ctx2.bufnr)
 			end
 		end
 	end
@@ -113,16 +112,16 @@ local function on_code_action_results(results, ctx, options)
 			client.request("codeAction/resolve", action, function(err, resolved_action)
 				if err then
 					if action.command then
-						local_apply_action(action, client)
+						local_apply_action(ctx, action, client)
 					else
 						vim.notify(err.code .. ": " .. err.message, vim.log.levels.ERROR)
 					end
 				else
-					local_apply_action(resolved_action, client)
+					local_apply_action(ctx, resolved_action, client)
 				end
 			end)
 		else
-			local_apply_action(action, client)
+			local_apply_action(ctx, action, client)
 		end
 	end
 

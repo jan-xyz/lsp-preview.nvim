@@ -6,7 +6,7 @@ local action_state = require("telescope.actions.state")
 
 ---@class Previewable
 ---@field title fun(self): string
----@field preview fun(self, opts): {text: string, syntax: string}
+---@field preview fun(self, opts: table): {text: string, syntax: string}
 
 ---@class Value
 ---@field title string
@@ -49,27 +49,31 @@ local default_make_make_display = function(values)
 	end
 end
 
+---@param job_id string
+---@return boolean
 local job_is_running = function(job_id)
 	return vim.fn.jobwait({ job_id }, 0)[1] == -1
 end
 
-local get_selected_diffs = function(prompt_bufnr, smart)
-	smart = vim.F.if_nil(smart, true)
+---@param prompt_bufnr integer
+---@return integer[]
+local get_selected_diffs = function(prompt_bufnr)
 	local selected = {}
 	local current_picker = action_state.get_current_picker(prompt_bufnr)
 	local selections = current_picker:get_multi_selection()
-	if smart and vim.tbl_isempty(selections) then
-		table.insert(selected, action_state.get_selected_entry())
+	if vim.tbl_isempty(selections) then
+		table.insert(selected, action_state.get_selected_entry().index)
 	else
-		for _, selection in ipairs(selections) do
-			table.insert(selected, selection)
+		for index, _ in ipairs(selections) do
+			table.insert(selected, index)
 		end
 	end
 	return selected
 end
 
 ---@param entries Previewable[]
-function M.apply_action(opts, entries)
+---@param apply_selection fun(selected_indices: integer[])
+function M.apply_action(opts, entries, apply_selection)
 	local actions = require("telescope.actions")
 	local pickers = require("telescope.pickers")
 	local Previewer = require("telescope.previewers.previewer")
@@ -198,12 +202,12 @@ function M.apply_action(opts, entries)
 			map("i", "<c-space>", actions.select_all)
 
 			actions.select_default:replace(function()
-				local selections = get_selected_diffs(prompt_bufnr, true)
+				local selections = get_selected_diffs(prompt_bufnr)
 
 				actions.close(prompt_bufnr)
 				vim.notify(vim.inspect(selections))
 
-				-- selection.value.entry:apply()
+				apply_selection(selections)
 			end)
 
 			return true
