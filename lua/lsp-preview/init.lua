@@ -15,7 +15,7 @@ function M.setup(opts)
 end
 
 M.rename = function(new_name, opts)
-	opts = vim.tbl_deep_extend("force", config, opts or {})
+	opts = config.adhoc_merge(opts or {})
 
 	-- Reset it to the original before every operation in case of a failure.
 	---@diagnostic disable-next-line: duplicate-set-field
@@ -40,7 +40,7 @@ M.rename_preview = function(new_name, opts)
 end
 
 M.code_action = function(opts)
-	opts = vim.tbl_deep_extend("force", config, opts or {})
+	opts = config.adhoc_merge(opts or {})
 
 	-- Reset it to the original before every operation in case of a failure.
 	---@diagnostic disable-next-line: duplicate-set-field
@@ -56,7 +56,6 @@ M.code_action = function(opts)
 	util.apply_workspace_edit = lWorkspaceEdit.make_apply_workspace_edit(apply_workspace_edit)
 
 	-- automatically trigger Telescope when there is only one action
-	opts.apply = true
 	vim.lsp.buf.code_action(opts)
 end
 
