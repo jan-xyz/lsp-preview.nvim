@@ -1,5 +1,6 @@
 local lDiff = require("lsp-preview.diff")
 local lTelescope = require("lsp-preview.telescope")
+local config = require("lsp-preview.config")
 
 local M = {}
 
@@ -41,12 +42,11 @@ end
 M.make_apply_workspace_edit = function(orig_apply_workspace_edits)
 	return function(workspace_edit, offset_encoding)
 		local documentChanges, changes = lDiff.get_changes(workspace_edit, offset_encoding)
-		local opt = {}
-		opt.diff = { ctxlen = 20 } -- provide a large diff context view
 
+		local opts = config
 
 		lTelescope.apply_action(
-			opt,
+			opts,
 			documentChanges,
 			changes,
 			make_apply_func(workspace_edit, offset_encoding, orig_apply_workspace_edits)

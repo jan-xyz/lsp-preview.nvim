@@ -1,4 +1,5 @@
 local lWorkspaceEdit = require("lsp-preview.workspace_edit")
+local config = require("lsp-preview.config")
 
 local util = require("vim.lsp.util")
 
@@ -7,12 +8,14 @@ local M = {}
 -- The original workspace_edit from the std library of vim for backup and resets.
 local apply_workspace_edit = util.apply_workspace_edit
 
-function M.setup(_)
-
+---Setup the default behaviour of the plugin
+---@param opts Options
+function M.setup(opts)
+	config.setup(opts)
 end
 
 M.rename = function(new_name, opts)
-	opts = opts or {}
+	opts = vim.tbl_deep_extend("force", config, opts or {})
 
 	-- Reset it to the original before every operation in case of a failure.
 	---@diagnostic disable-next-line: duplicate-set-field
@@ -37,7 +40,7 @@ M.rename_preview = function(new_name, opts)
 end
 
 M.code_action = function(opts)
-	opts = opts or {}
+	opts = vim.tbl_deep_extend("force", config, opts or {})
 
 	-- Reset it to the original before every operation in case of a failure.
 	---@diagnostic disable-next-line: duplicate-set-field
