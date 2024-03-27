@@ -26,6 +26,10 @@ lazy.nvim:
   'jan-xyz/lsp-preview.nvim',
   version = "*",
   opts = {},
+  dependencies = {
+   "nvim-telescope/telescope.nvim",
+   "nvim-lua/plenary.nvim",
+  },
 }
 ```
 
