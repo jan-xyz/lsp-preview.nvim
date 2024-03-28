@@ -26,6 +26,10 @@ function M.adhoc_merge(config)
 	return vim.tbl_deep_extend("force", user_config, config)
 end
 
+function M.__reset()
+	user_config = default_config
+end
+
 setmetatable(M, {
 	__index = function(_, key)
 		return user_config[key]
