@@ -14,7 +14,7 @@ please let me know.
 ## Acknoweldgement
 
 The implementation of the diffs and the telescope picker
-are heavily inspired by [azsnhe21/actions-preview.nvim](github.com/aznhe21/actions-preview.nvim).
+are heavily inspired by [azsnhe21/actions-preview.nvim](https://github.com/aznhe21/actions-preview.nvim).
 Without the prework done there, I would not have been able to build this.
 
 ## Installation
@@ -34,7 +34,7 @@ lazy.nvim:
 ```
 
 ```lua
- -- Renam
+ -- Rename
   vim.keymap.set("n", "<leader>r", require("lsp-preview").rename,
    { noremap = true, buffer = bufnr, desc = "Rename symbol" })
   vim.keymap.set("n", "<leader>R", require("lsp-preview").rename_preview,
@@ -84,5 +84,5 @@ require("lsp-preview").setup({
 
 ## Inspired by
 
-* github.com/aznhe21/actions-preview.nvim
-* github.com/stevearc/dressing.nvim
+* <https://github.com/aznhe21/actions-preview.nvim>
+* <https://github.com/stevearc/dressing.nvim>
