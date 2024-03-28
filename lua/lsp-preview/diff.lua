@@ -30,7 +30,7 @@ end
 
 ---@return string
 function Rename:title()
-	return "Rename: " .. self.change.oldUri
+	return "Rename: " .. self.change.oldUri .. " -> " .. self.change.newUri
 end
 
 ---@return { text: string, syntax: string } previewObject # the preview object used for backends

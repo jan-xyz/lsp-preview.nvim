@@ -179,7 +179,7 @@ function M.apply_action(opts, documentChanges, changes, apply_selection)
 				preview = preview or { syntax = "", text = "preview not available" }
 
 				vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(preview.text, "\n", { plain = true }))
-				putils.highlighter(bufnr, preview.syntax, opts)
+				putils.highlighter(bufnr, preview.syntax, {})
 			end
 		end,
 		scroll_fn = function(self, direction)
