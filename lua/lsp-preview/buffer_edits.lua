@@ -48,9 +48,9 @@ end
 function M.edit_buffer_text(text_edits, bufnr, offset_encoding)
 	local eol = get_eol(bufnr)
 
-	local lines = get_lines(bufnr)
-	local new_lines = apply_text_edits(text_edits, lines, offset_encoding)
-	return table.concat(lines, eol) .. eol, table.concat(new_lines, eol) .. eol
+	local old_lines = get_lines(bufnr)
+	local new_lines = apply_text_edits(text_edits, old_lines, offset_encoding)
+	return table.concat(old_lines, eol) .. eol, table.concat(new_lines, eol) .. eol
 end
 
 return M
