@@ -14,7 +14,10 @@ function M.setup(opts)
 	config.setup(opts)
 end
 
-M.rename = function(new_name, opts)
+---A drop-in replacement for vim.lsp.buf.rename which can preview the chanes.
+---@param new_name string
+---@param opts table See M.setup for more information
+function M.rename(new_name, opts)
 	opts = config.adhoc_merge(opts or {})
 
 	-- Reset it to the original before every operation in case of a failure.
@@ -33,13 +36,16 @@ M.rename = function(new_name, opts)
 	vim.lsp.buf.rename(new_name, opts)
 end
 
-M.rename_preview = function(new_name, opts)
+function M.rename_preview(new_name, opts)
 	opts = opts or {}
 	opts.preview = true
 	M.rename(new_name, opts)
 end
 
-M.code_action = function(opts)
+---A drop-in replacement for vim.lsp.buf.code_action which can preview
+---the changes.
+---@param opts table See M.setup for more information
+function M.code_action(opts)
 	opts = config.adhoc_merge(opts or {})
 
 	-- Reset it to the original before every operation in case of a failure.
@@ -58,7 +64,7 @@ M.code_action = function(opts)
 	vim.lsp.buf.code_action(opts)
 end
 
-M.code_action_preview = function(opts)
+function M.code_action_preview(opts)
 	opts = opts or {}
 	opts.preview = true
 	M.code_action(opts)
