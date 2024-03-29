@@ -67,6 +67,17 @@ require("lsp-preview").setup({
 })
 ```
 
+## Usage
+
+The picker comes pre-selected with all changes.
+
+| mapping | description |
+|----|----|
+| `<cr>` | accept selection and apply|
+| `<tab>` | toggle selection on current item and move to next |
+| `<s-tab>` | toggle selection on current item and move to previous |
+| `<c-a>` | toggle all selections |
+
 ## TODO
 
 * [x] implement selection
