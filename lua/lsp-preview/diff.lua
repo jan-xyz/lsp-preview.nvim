@@ -36,14 +36,14 @@ end
 ---@return { text: string, syntax: string } previewObject # the preview object used for backends
 function Rename:preview(opts)
 	---@type string
-	local diff = ""
+	local text = ""
 
-	diff = diff .. string.format("diff --git a/%s b/%s\n", self.old_path, self.new_path)
-	diff = diff .. string.format("rename from %s\n", self.old_path)
-	diff = diff .. string.format("rename to %s\n", self.new_path)
-	diff = diff .. "\n"
+	text = text .. string.format("diff --git a/%s b/%s\n", self.old_path, self.new_path)
+	text = text .. string.format("rename from %s\n", self.old_path)
+	text = text .. string.format("rename to %s\n", self.new_path)
+	text = text .. "\n"
 
-	return { text = diff, syntax = "diff" }
+	return { text = text, syntax = "diff" }
 end
 
 ------------------
@@ -75,16 +75,16 @@ end
 ---@return { text: string, syntax: string } previewObject # the preview object used for backends
 function Create:preview(opts)
 	---@type string
-	local diff = ""
+	local text = ""
 
-	diff = diff .. string.format("diff --git a/%s b/%s\n", self.path, self.path)
+	text = text .. string.format("diff --git a/%s b/%s\n", self.path, self.path)
 	-- delta needs file mode
-	diff = diff .. "new file mode 100644\n"
+	text = text .. "new file mode 100644\n"
 	-- diff-so-fancy needs index
-	diff = diff .. "index 0000000..fffffff\n"
-	diff = diff .. "\n"
+	text = text .. "index 0000000..fffffff\n"
+	text = text .. "\n"
 
-	return { text = diff, syntax = "diff" }
+	return { text = text, syntax = "diff" }
 end
 
 ------------------
@@ -116,14 +116,14 @@ end
 ---@return { text: string, syntax: string } previewObject # the preview object used for backends
 function Delete:preview(opts)
 	---@type string
-	local diff = ""
+	local text = ""
 
-	diff = diff .. string.format("diff --git a/%s b/%s\n", self.path, self.path)
-	diff = diff .. string.format("--- a/%s\n", self.path)
-	diff = diff .. "+++ /dev/null\n"
-	diff = diff .. "\n"
+	text = text .. string.format("diff --git a/%s b/%s\n", self.path, self.path)
+	text = text .. string.format("--- a/%s\n", self.path)
+	text = text .. "+++ /dev/null\n"
+	text = text .. "\n"
 
-	return { text = diff, syntax = "diff" }
+	return { text = text, syntax = "diff" }
 end
 
 ------------------
@@ -171,18 +171,18 @@ function Edit:preview(opts)
 	opts = opts or {}
 
 	---@type string
-	local diff = ""
+	local text = ""
 
 	---@type string
 	local text_diff = vim.diff(self.old_text, self.new_text, opts.diff or {}) or ""
 
-	diff = diff .. string.format("diff --git a/%s b/%s\n", self.path, self.path)
-	diff = diff .. string.format("--- a/%s\n", self.path)
-	diff = diff .. string.format("+++ b/%s\n", self.path)
-	diff = diff .. vim.trim(text_diff) .. "\n"
-	diff = diff .. "\n"
+	text = text .. string.format("diff --git a/%s b/%s\n", self.path, self.path)
+	text = text .. string.format("--- a/%s\n", self.path)
+	text = text .. string.format("+++ b/%s\n", self.path)
+	text = text .. vim.trim(text_diff) .. "\n"
+	text = text .. "\n"
 
-	return { text = diff, syntax = "diff" }
+	return { text = text, syntax = "diff" }
 end
 
 ------------------------------------------------------------
