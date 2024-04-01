@@ -93,6 +93,14 @@ The picker comes pre-selected with all changes.
 * [ ] Allow sorting list by token type that changes (e.g. var, class, comment)
 * [ ] Add tests
 
+## FAQ
+
+* can I use a custom output tool like `delta`?
+
+No, this is also nothing I am planning to support. The current `diff --git` output
+is only a quick hack for now. Once there is support selecting individual edits
+of a file, I am planning to also display the full file with a rich diff experience.
+
 ## Inspired by
 
 * <https://github.com/aznhe21/actions-preview.nvim>
