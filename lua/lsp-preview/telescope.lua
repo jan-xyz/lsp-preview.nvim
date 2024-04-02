@@ -6,6 +6,7 @@ local action_state = require("telescope.actions.state")
 
 ---@class Previewable
 ---@field title fun(self): string
+---@field filename fun(self): string
 ---@field preview fun(self, opts: table): {text: string, syntax: string}
 
 ---@class Value
@@ -50,12 +51,6 @@ local default_make_make_display = function(values)
 	end
 end
 
----@param job_id string
----@return boolean
-local job_is_running = function(job_id)
-	return vim.fn.jobwait({ job_id }, 0)[1] == -1
-end
-
 ---@param prompt_bufnr integer
 ---@return integer[]
 local get_selected_diffs = function(prompt_bufnr)
@@ -79,7 +74,7 @@ end
 function M.apply_action(opts, documentChanges, changes, apply_selection)
 	local actions = require("telescope.actions")
 	local pickers = require("telescope.pickers")
-	local Previewer = require("telescope.previewers.previewer")
+	local previewers = require("telescope.previewers")
 	local finders = require("telescope.finders")
 	local conf = require("telescope.config").values
 	local utils = require("telescope.utils")
@@ -121,86 +116,25 @@ function M.apply_action(opts, documentChanges, changes, apply_selection)
 
 	local make_display = default_make_make_display(values)
 
-	local buffers = {}
-	local term_ids = {}
-
-	local previewer = Previewer:new({
-		title = "Code Action Preview",
-		setup = function(_self)
+	local previewer = previewers.new_buffer_previewer({
+		setup = function(self)
 			-- pre-select all changes on picker creation
 			local prompt_bufnr = vim.api.nvim_get_current_buf()
 			actions.select_all(prompt_bufnr)
 			return {}
 		end,
-		teardown = function(self)
-			if not self.state then
-				return
-			end
+		---@param entry {value: Value}
+		define_preview = function(self, entry, status)
+			local preview = entry.value.entry:preview(opts)
+			preview = preview or { syntax = "", text = "preview not available" }
 
-			self.state.winid = nil
-			self.state.bufnr = nil
-
-			for _, bufnr in ipairs(buffers) do
-				local term_id = term_ids[bufnr]
-				if term_id and job_is_running(term_id) then
-					vim.fn.jobstop(term_id)
-				end
-				utils.buf_delete(bufnr)
-			end
-
-			buffers = {}
-			term_ids = {}
+			vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, vim.split(preview.text, "\n", { plain = true }))
 		end,
 		---@param entry {value: Value}
-		preview_fn = function(self, entry, status)
-			local preview_winid = status.layout and status.layout.preview and status.layout.preview.winid or
-					status.preview_win
-
-			local do_preview = false
-			local bufnr = buffers[entry.value.index]
-			if not bufnr then
-				bufnr = vim.api.nvim_create_buf(false, true)
-				buffers[entry.value.index] = bufnr
-				do_preview = true
-
-				vim.api.nvim_win_set_option(preview_winid, "winhl", "Normal:TelescopePreviewNormal")
-				vim.api.nvim_win_set_option(preview_winid, "signcolumn", "no")
-				vim.api.nvim_win_set_option(preview_winid, "foldlevel", 100)
-				vim.api.nvim_win_set_option(preview_winid, "wrap", false)
-				vim.api.nvim_win_set_option(preview_winid, "scrollbind", false)
-			end
-
-			utils.win_set_buf_noautocmd(preview_winid, bufnr)
-			self.state.winid = preview_winid
-			self.state.bufnr = bufnr
-
-			if do_preview then
-				local preview = entry.value.entry:preview(opts)
-				preview = preview or { syntax = "", text = "preview not available" }
-
-				vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(preview.text, "\n", { plain = true }))
-				putils.highlighter(bufnr, preview.syntax, {})
-			end
-		end,
-		scroll_fn = function(self, direction)
-			if not self.state then
-				return
-			end
-
-			local count = math.abs(direction)
-			local term_id = term_ids[self.state.bufnr]
-			if term_id and job_is_running(term_id) then
-				local input = direction > 0 and "d" or "u"
-
-				local termcode = vim.api.nvim_replace_termcodes(count .. input, true, false, true)
-				vim.fn.chansend(term_id, termcode)
-			else
-				local input = direction > 0 and [[]] or [[]]
-
-				vim.api.nvim_win_call(self.state.winid, function()
-					vim.cmd([[normal! ]] .. count .. input)
-				end)
-			end
+		---@return string
+		get_buffer_by_name = function(self, entry)
+			-- create a single buffer per file.
+			return entry.value.entry:filename()
 		end,
 	})
 
