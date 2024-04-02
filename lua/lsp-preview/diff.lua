@@ -41,7 +41,7 @@ function Rename:filename()
 end
 
 ---@return string filetype
-function Rename:preview(bufnr, opts)
+function Rename:preview(bufnr, _, _)
 	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "no preview" })
 	return ""
 end
@@ -78,7 +78,7 @@ function Create:filename()
 end
 
 ---@return string filetype
-function Create:preview(bufnr, opts)
+function Create:preview(bufnr, _, _)
 	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "no preview" })
 	return ""
 end
@@ -115,7 +115,7 @@ function Delete:filename()
 end
 
 ---@return string filetype
-function Delete:preview(bufnr, opts)
+function Delete:preview(bufnr, _, _)
 	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "no preview" })
 	return ""
 end
@@ -202,7 +202,7 @@ function M.get_changes(workspace_edit, offset_encoding)
 	local changes = {}
 
 	if workspace_edit.documentChanges then
-		for index, change in ipairs(workspace_edit.documentChanges) do
+		for _, change in ipairs(workspace_edit.documentChanges) do
 			if change.kind == "rename" then
 				---@cast change RenameFile
 				table.insert(documentChanges, Rename.new(change, offset_encoding))
@@ -215,8 +215,8 @@ function M.get_changes(workspace_edit, offset_encoding)
 			elseif not change.kind then
 				---@cast change TextDocumentEdit
 				table.insert(documentChanges, Edit.new("all", change.textDocument.uri, change.edits, offset_encoding))
-				for index2, edit in ipairs(change.edits) do
-					table.insert(documentChanges, Edit.new(index2, change.textDocument.uri, { edit }, offset_encoding))
+				for index, edit in ipairs(change.edits) do
+					table.insert(documentChanges, Edit.new(index, change.textDocument.uri, { edit }, offset_encoding))
 				end
 			else
 				vim.notify("unknown change kind")
