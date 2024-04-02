@@ -29,6 +29,12 @@ lazy.nvim:
   dependencies = {
    "nvim-telescope/telescope.nvim",
    "nvim-lua/plenary.nvim",
+  {
+    "echasnovski/mini.nvim",
+    config = function()
+     require("mini.diff").setup({})
+    end,
+    },
   },
 }
 ```
@@ -60,10 +66,6 @@ require("lsp-preview").setup({
  apply = true,
  --Preview all changes per default.
  preview = false,
- --Configuration provided to vim.diff (see `:h vim.diff()`)
- diff = {
-  ctxlen = 5,
- },
 })
 ```
 

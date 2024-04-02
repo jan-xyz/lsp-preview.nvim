@@ -167,18 +167,24 @@ end
 function Edit:preview(bufnr, winid, opts)
 	opts = opts or {}
 
+	-- set lines in buffer to the changed output
 	---@type string
 	local text = self.new_text
 	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(text, "\n", { plain = true }))
 
+	-- setup minidiff
 	vim.b[bufnr].minidiff_config = { source = { attach = function() end } }
 	minidiff.set_ref_text(bufnr, self.old_text)
 	if not minidiff.get_buf_data(bufnr).overlay then
 		minidiff.toggle_overlay(bufnr, self.old_text)
 	end
+
+	-- scroll change into view
 	local lnum = self.edits[1].range.start.line + 1
 	-- calling it with pcall because the window is not set on initial creation.
 	pcall(vim.api.nvim_win_set_cursor, winid, { lnum, 0 })
+
+	-- return file type
 	return vim.filetype.match({ filename = self.path }) or ""
 end
 
