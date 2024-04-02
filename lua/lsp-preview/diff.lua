@@ -164,7 +164,7 @@ function Edit:filename()
 end
 
 ---@return string filetype
-function Edit:preview(bufnr, opts)
+function Edit:preview(bufnr, winid, opts)
 	opts = opts or {}
 
 	---@type string
@@ -176,6 +176,9 @@ function Edit:preview(bufnr, opts)
 	if not minidiff.get_buf_data(bufnr).overlay then
 		minidiff.toggle_overlay(bufnr, self.old_text)
 	end
+	local lnum = self.edits[1].range.start.line + 1
+	-- calling it with pcall because the window is not set on initial creation.
+	pcall(vim.api.nvim_win_set_cursor, winid, { lnum, 0 })
 	return vim.filetype.match({ filename = self.path }) or ""
 end
 

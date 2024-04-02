@@ -125,7 +125,7 @@ function M.apply_action(opts, documentChanges, changes, apply_selection)
 		end,
 		---@param entry {value: Value}
 		define_preview = function(self, entry, status)
-			local filetype = entry.value.entry:preview(self.state.bufnr, opts)
+			local filetype = entry.value.entry:preview(self.state.bufnr, self.state.winid, opts)
 			putils.highlighter(self.state.bufnr, filetype, {})
 		end,
 		---@param entry {value: Value}
