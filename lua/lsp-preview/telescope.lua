@@ -52,8 +52,9 @@ local default_make_make_display = function(values)
 end
 
 ---@param prompt_bufnr integer
----@return integer[]
+---@return {value: Value}[]
 local get_selected_diffs = function(prompt_bufnr)
+	---@type {value: Value}[]
 	local selected = {}
 	local current_picker = action_state.get_current_picker(prompt_bufnr)
 	---@type Value[]

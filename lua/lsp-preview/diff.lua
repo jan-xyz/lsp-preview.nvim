@@ -126,6 +126,7 @@ end
 
 ---@class Edit: Previewable
 ---@field change TextDocumentEdit
+---@field index "all" | number
 ---@field uri string
 ---@field edits table
 ---@field path string
@@ -134,16 +135,18 @@ end
 ---@field offset_encoding string
 local Edit = {}
 
+---@param index "all" | number
 ---@param uri string
 ---@param edits TextEdit[]
 ---@param offset_encoding string
 ---@return Edit
-function Edit.new(uri, edits, offset_encoding)
+function Edit.new(index, uri, edits, offset_encoding)
 	local path = vim.fn.fnamemodify(vim.uri_to_fname(uri), ":.")
 	local bufnr = vim.uri_to_bufnr(uri)
 	local old_text, new_text = lEdits.edit_buffer_text(edits, bufnr, offset_encoding)
 
 	return setmetatable({
+		index = index,
 		uri = uri,
 		edits = edits,
 		path = path,
@@ -155,7 +158,7 @@ end
 
 ---@return string
 function Edit:title()
-	return "Edit: " .. self.path
+	return "Edit: " .. self.path .. ":" .. self.index
 end
 
 ---@return string
@@ -211,9 +214,9 @@ function M.get_changes(workspace_edit, offset_encoding)
 				table.insert(documentChanges, Delete.new(change, offset_encoding))
 			elseif not change.kind then
 				---@cast change TextDocumentEdit
-				table.insert(documentChanges, Edit.new(change.textDocument.uri, change.edits, offset_encoding))
+				table.insert(documentChanges, Edit.new("all", change.textDocument.uri, change.edits, offset_encoding))
 				for index2, edit in ipairs(change.edits) do
-					table.insert(documentChanges, Edit.new(change.textDocument.uri, { edit }, offset_encoding))
+					table.insert(documentChanges, Edit.new(index2, change.textDocument.uri, { edit }, offset_encoding))
 				end
 			else
 				vim.notify("unknown change kind")
@@ -221,9 +224,9 @@ function M.get_changes(workspace_edit, offset_encoding)
 		end
 	elseif workspace_edit.changes and not vim.tbl_isempty(workspace_edit.changes) then
 		for uri, edits in pairs(workspace_edit.changes) do
-			table.insert(changes, Edit.new(uri, edits, offset_encoding))
+			table.insert(changes, Edit.new("all", uri, edits, offset_encoding))
 			for index, edit in ipairs(edits) do
-				table.insert(documentChanges, Edit.new(uri, { edit }, offset_encoding))
+				table.insert(documentChanges, Edit.new(index, uri, { edit }, offset_encoding))
 			end
 		end
 	end
