@@ -3,6 +3,8 @@
 -- for their work <3
 
 local lEdits = require("lsp-preview.buffer_edits")
+local minidiff = require("mini.diff")
+
 local M = {}
 
 ------------------
@@ -38,17 +40,10 @@ function Rename:filename()
 	return self.old_path
 end
 
----@return { text: string, syntax: string } previewObject # the preview object used for backends
-function Rename:preview(opts)
-	---@type string
-	local text = ""
-
-	text = text .. string.format("diff --git a/%s b/%s\n", self.old_path, self.new_path)
-	text = text .. string.format("rename from %s\n", self.old_path)
-	text = text .. string.format("rename to %s\n", self.new_path)
-	text = text .. "\n"
-
-	return { text = text, syntax = "diff" }
+---@return string filetype
+function Rename:preview(bufnr, opts)
+	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "no preview" })
+	return ""
 end
 
 ------------------
@@ -82,19 +77,10 @@ function Create:filename()
 	return self.path
 end
 
----@return { text: string, syntax: string } previewObject # the preview object used for backends
-function Create:preview(opts)
-	---@type string
-	local text = ""
-
-	text = text .. string.format("diff --git a/%s b/%s\n", self.path, self.path)
-	-- delta needs file mode
-	text = text .. "new file mode 100644\n"
-	-- diff-so-fancy needs index
-	text = text .. "index 0000000..fffffff\n"
-	text = text .. "\n"
-
-	return { text = text, syntax = "diff" }
+---@return string filetype
+function Create:preview(bufnr, opts)
+	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "no preview" })
+	return ""
 end
 
 ------------------
@@ -128,17 +114,10 @@ function Delete:filename()
 	return self.path
 end
 
----@return { text: string, syntax: string } previewObject # the preview object used for backends
-function Delete:preview(opts)
-	---@type string
-	local text = ""
-
-	text = text .. string.format("diff --git a/%s b/%s\n", self.path, self.path)
-	text = text .. string.format("--- a/%s\n", self.path)
-	text = text .. "+++ /dev/null\n"
-	text = text .. "\n"
-
-	return { text = text, syntax = "diff" }
+---@return string filetype
+function Delete:preview(bufnr, opts)
+	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "no preview" })
+	return ""
 end
 
 ------------------
@@ -184,23 +163,20 @@ function Edit:filename()
 	return self.path
 end
 
----@return { text: string, syntax: string } previewObject # the preview object used for backends
-function Edit:preview(opts)
+---@return string filetype
+function Edit:preview(bufnr, opts)
 	opts = opts or {}
 
 	---@type string
-	local text = ""
+	local text = self.new_text
+	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(text, "\n", { plain = true }))
 
-	---@type string
-	local text_diff = vim.diff(self.old_text, self.new_text, opts.diff or {}) or ""
-
-	text = text .. string.format("diff --git a/%s b/%s\n", self.path, self.path)
-	text = text .. string.format("--- a/%s\n", self.path)
-	text = text .. string.format("+++ b/%s\n", self.path)
-	text = text .. vim.trim(text_diff) .. "\n"
-	text = text .. "\n"
-
-	return { text = text, syntax = "diff" }
+	vim.b[bufnr].minidiff_config = { source = { attach = function() end } }
+	minidiff.set_ref_text(bufnr, self.old_text)
+	if not minidiff.get_buf_data(bufnr).overlay then
+		minidiff.toggle_overlay(bufnr, self.old_text)
+	end
+	return vim.filetype.match({ filename = self.path }) or ""
 end
 
 ------------------------------------------------------------
@@ -237,6 +213,9 @@ function M.get_changes(workspace_edit, offset_encoding)
 	elseif workspace_edit.changes and not vim.tbl_isempty(workspace_edit.changes) then
 		for uri, edits in pairs(workspace_edit.changes) do
 			table.insert(changes, Edit.new(uri, edits, offset_encoding))
+			for index, edit in ipairs(edits) do
+				table.insert(documentChanges, Edit.new(uri, { edit }, offset_encoding))
+			end
 		end
 	end
 

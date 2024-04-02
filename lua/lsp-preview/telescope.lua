@@ -7,7 +7,7 @@ local action_state = require("telescope.actions.state")
 ---@class Previewable
 ---@field title fun(self): string
 ---@field filename fun(self): string
----@field preview fun(self, opts: table): {text: string, syntax: string}
+---@field preview fun(self, bufnr: integer, opts: table): string
 
 ---@class Value
 ---@field title string
@@ -125,10 +125,8 @@ function M.apply_action(opts, documentChanges, changes, apply_selection)
 		end,
 		---@param entry {value: Value}
 		define_preview = function(self, entry, status)
-			local preview = entry.value.entry:preview(opts)
-			preview = preview or { syntax = "", text = "preview not available" }
-
-			vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, vim.split(preview.text, "\n", { plain = true }))
+			local filetype = entry.value.entry:preview(self.state.bufnr, opts)
+			putils.highlighter(self.state.bufnr, filetype, {})
 		end,
 		---@param entry {value: Value}
 		---@return string
