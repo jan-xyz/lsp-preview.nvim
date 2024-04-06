@@ -4,23 +4,32 @@
 
 local action_state = require("telescope.actions.state")
 
+---The diff hunk
 ---@class Previewable
 ---@field title fun(self): string
 ---@field filename fun(self): string
----@field preview fun(self, bufnr: integer, opts: table): string
+---@field preview fun(self, bufnr: integer, winid: integer, opts: table): string
 
+---The Entry passed around in Telescope
+---@class Entry
+---@field value Value
+---@field display fun(entry: Entry)
+---@field index integer
+---@field ordinal string
+
+---The Value inside of an entry that gets previewed and can be selected
 ---@class Value
 ---@field title string
 ---@field index string
 ---@field type string
----@field entry Previewable
+---@field payload Previewable
 
 local M = {}
 
----@param entry Previewable
-local default_make_value = function(entry)
+---@param payload Previewable
+local default_make_value = function(payload)
 	return {
-		title = entry:title(),
+		title = payload:title(),
 	}
 end
 
@@ -52,9 +61,9 @@ local default_make_make_display = function(values)
 end
 
 ---@param prompt_bufnr integer
----@return {value: Value}[]
+---@return Entry[]
 local get_selected_diffs = function(prompt_bufnr)
-	---@type {value: Value}[]
+	---@type Entry[]
 	local selected = {}
 	local current_picker = action_state.get_current_picker(prompt_bufnr)
 	---@type Value[]
@@ -84,8 +93,8 @@ function M.apply_action(opts, documentChanges, changes, apply_selection)
 	local make_value = default_make_value
 	---@type Value[]
 	local values = {}
-	for index, entry in ipairs(documentChanges) do
-		local value = make_value(entry)
+	for index, payload in ipairs(documentChanges) do
+		local value = make_value(payload)
 		if type(value) ~= "table" then
 			error("'make_value' must return a table")
 		end
@@ -94,13 +103,13 @@ function M.apply_action(opts, documentChanges, changes, apply_selection)
 		end
 
 		value.index = index
-		value.entry = entry
+		value.payload = payload
 		value.type = "documentChanges"
 
 		table.insert(values, value)
 	end
-	for index, entry in ipairs(changes) do
-		local value = make_value(entry)
+	for index, payload in ipairs(changes) do
+		local value = make_value(payload)
 		if type(value) ~= "table" then
 			error("'make_value' must return a table")
 		end
@@ -109,7 +118,7 @@ function M.apply_action(opts, documentChanges, changes, apply_selection)
 		end
 
 		value.index = index
-		value.entry = entry
+		value.payload = payload
 		value.type = "changes"
 
 		table.insert(values, value)
@@ -124,16 +133,16 @@ function M.apply_action(opts, documentChanges, changes, apply_selection)
 			actions.select_all(prompt_bufnr)
 			return {}
 		end,
-		---@param entry {value: Value}
+		---@param entry Entry
 		define_preview = function(self, entry, status)
-			local filetype = entry.value.entry:preview(self.state.bufnr, self.state.winid, opts)
+			local filetype = entry.value.payload:preview(self.state.bufnr, self.state.winid, opts)
 			putils.highlighter(self.state.bufnr, filetype, {})
 		end,
-		---@param entry {value: Value}
+		---@param entry Entry
 		---@return string
 		get_buffer_by_name = function(self, entry)
 			-- create a single buffer per file.
-			return entry.value.entry:filename()
+			return entry.value.payload:filename()
 		end,
 	})
 
@@ -149,7 +158,7 @@ function M.apply_action(opts, documentChanges, changes, apply_selection)
 	})
 
 	pickers.new(opts, {
-		prompt_title = "Code Actions",
+		prompt_title = "Edits to apply",
 		previewer = previewer,
 		finder = finder,
 		sorter = conf.generic_sorter(opts),
