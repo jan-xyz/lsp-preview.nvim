@@ -4,10 +4,6 @@
 
 local action_state = require("telescope.actions.state")
 
----@class PreviewableContainer
----@field type "documentChange" | "change"
----@field changes Previewable[]
-
 ---The diff hunk
 ---@class Previewable
 ---@field title string
@@ -67,9 +63,9 @@ local get_selected_diffs = function(prompt_bufnr)
 	return selected
 end
 
----@param container PreviewableContainer
----@param apply_selection fun(selected_indices: integer[], type: "change"|"documentChange")
-function M.apply_action(opts, container, apply_selection)
+---@param changes Previewable[]
+---@param apply_selection fun(selected_indices: integer[])
+function M.apply_action(opts, changes, apply_selection)
 	local actions = require("telescope.actions")
 	local pickers = require("telescope.pickers")
 	local previewers = require("telescope.previewers")
@@ -79,7 +75,7 @@ function M.apply_action(opts, container, apply_selection)
 	local putils = require("telescope.previewers.utils")
 
 	-- validate the table to have everything we need
-	for _, value in ipairs(container.changes) do
+	for _, value in ipairs(changes) do
 		if type(value) ~= "table" then
 			error("'make_value' must return a table")
 		end
@@ -88,7 +84,7 @@ function M.apply_action(opts, container, apply_selection)
 		end
 	end
 
-	local make_display = make_make_display(container.changes)
+	local make_display = make_make_display(changes)
 
 	local previewer = previewers.new_buffer_previewer({
 		setup = function(self)
@@ -111,7 +107,7 @@ function M.apply_action(opts, container, apply_selection)
 	})
 
 	local finder = finders.new_table({
-		results = container.changes,
+		results = changes,
 		entry_maker = function(value)
 			return {
 				display = make_display,
@@ -134,7 +130,7 @@ function M.apply_action(opts, container, apply_selection)
 
 				actions.close(prompt_bufnr)
 
-				apply_selection(selected_entries, container.type)
+				apply_selection(selected_entries)
 			end)
 
 			return true

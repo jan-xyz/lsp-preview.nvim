@@ -181,13 +181,10 @@ end
 
 
 ---@param workspace_edit WorkspaceEdit
----@return PreviewableContainer
+---@return Previewable[]
 function M.get_changes(workspace_edit, offset_encoding)
 	-- TODO: this function should also keep track of what type of change it is converting in the internal model
 	-- and it should keep track of the location in the original workspace_edit.
-
-	---@type PreviewableContainer
-	local ret = { type = "documentChange", changes = {} }
 
 	---@type Previewable[]
 	local changes = {}
@@ -216,7 +213,6 @@ function M.get_changes(workspace_edit, offset_encoding)
 			end
 		end
 	elseif workspace_edit.changes then
-		ret.type = "change"
 		for uri, edits in pairs(workspace_edit.changes) do
 			for index, edit in ipairs(edits) do
 				table.insert(changes, Edit.new({ primary = 1, secondary = index }, uri, edit, offset_encoding))
@@ -224,9 +220,7 @@ function M.get_changes(workspace_edit, offset_encoding)
 		end
 	end
 
-	ret.changes = changes
-
-	return ret
+	return changes
 end
 
 ---Compacting workspace_edit.documentChanges to make every index consecutive again.
