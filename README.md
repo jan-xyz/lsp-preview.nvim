@@ -11,12 +11,6 @@ This plugin affects all workspace edits coming from the language server.
 Not all are currently supported, if you run into problems with other methods,
 please let me know.
 
-## Acknoweldgement
-
-The implementation of the diffs and the telescope picker
-are heavily inspired by [azsnhe21/actions-preview.nvim](https://github.com/aznhe21/actions-preview.nvim).
-Without the prework done there, I would not have been able to build this.
-
 ## Installation
 
 lazy.nvim:
@@ -80,15 +74,9 @@ The picker comes pre-selected with all changes.
 | `<s-tab>` | toggle selection on current item and move to previous |
 | `<c-a>` | toggle all selections |
 
-## FAQ
-
-* can I use a custom output tool like `delta`?
-
-No, this is also nothing I am planning to support. The current `diff --git` output
-is only a quick hack for now. Once there is support selecting individual edits
-of a file, I am planning to also display the full file with a rich diff experience.
-
 ## Inspired by
 
-* <https://github.com/aznhe21/actions-preview.nvim>
-* <https://github.com/stevearc/dressing.nvim>
+* The implementation of the diffs and the telescope picker are heavily inspired
+  by [azsnhe21/actions-preview.nvim](https://github.com/aznhe21/actions-preview.nvim).
+  Without the prework done there, I would not have been able to build this.
+* The idea to overwrite a built-in function came from [stevearc/dressing.nvim](https://github.com/stevearc/dressing.nvim)
