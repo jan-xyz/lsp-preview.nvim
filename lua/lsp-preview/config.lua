@@ -5,14 +5,9 @@ local M = {}
 ---@field apply boolean
 ---Preview all changes per default.
 ---@field previe boolean
----Configuration provided to vim.diff (see `:h vim.diff()`)
----@field diff table
 local default_config = {
 	apply = true,
 	preview = false,
-	diff = {
-		ctxlen = 5,
-	},
 }
 
 

@@ -4,64 +4,54 @@
 
 local action_state = require("telescope.actions.state")
 
+---The diff hunk
 ---@class Previewable
----@field title fun(self): string
----@field preview fun(self, opts: table): {text: string, syntax: string}
-
----@class Value
 ---@field title string
----@field index string
----@field type string
----@field entry Previewable
+---@field filename fun(self): string
+---Return the index in the workspace_edit, sub_index is only provided for
+---Edits.
+---@field index number | {primary: number, secondary: number}
+---@field preview fun(self, bufnr: integer, winid: integer, opts: table): string
+
+---The Entry passed around in Telescope
+---@class Entry
+---@field value Previewable
+---@field display fun(entry: Entry)
+---@field ordinal string
+
 
 local M = {}
 
----@param entry Previewable
-local default_make_value = function(entry)
-	return {
-		title = entry:title(),
-	}
-end
-
----@param values Value[]
-local default_make_make_display = function(values)
+---@param values Previewable[]
+local make_make_display = function(values)
 	local entry_display = require("telescope.pickers.entry_display")
 	local strings = require("plenary.strings")
 
-	local index_width = 0
 	local title_width = 0
 	for _, value in ipairs(values) do
-		index_width = math.max(index_width, strings.strdisplaywidth(value.index))
 		title_width = math.max(title_width, strings.strdisplaywidth(value.title))
 	end
 
 	local displayer = entry_display.create({
 		separator = " ",
 		items = {
-			{ width = index_width + 1 },
 			{ width = title_width },
 		},
 	})
 	return function(entry)
 		return displayer({
-			{ entry.value.index .. ":", "TelescopePromptPrefix" },
 			{ entry.value.title },
 		})
 	end
 end
 
----@param job_id string
----@return boolean
-local job_is_running = function(job_id)
-	return vim.fn.jobwait({ job_id }, 0)[1] == -1
-end
-
 ---@param prompt_bufnr integer
----@return integer[]
+---@return Entry[]
 local get_selected_diffs = function(prompt_bufnr)
+	---@type Entry[]
 	local selected = {}
 	local current_picker = action_state.get_current_picker(prompt_bufnr)
-	---@type Value[]
+	---@type Previewable[]
 	local selections = current_picker:get_multi_selection()
 	if vim.tbl_isempty(selections) then
 		vim.notify("no change selected")
@@ -73,150 +63,62 @@ local get_selected_diffs = function(prompt_bufnr)
 	return selected
 end
 
----@param documentChanges Previewable[]
 ---@param changes Previewable[]
 ---@param apply_selection fun(selected_indices: integer[])
-function M.apply_action(opts, documentChanges, changes, apply_selection)
+function M.apply_action(opts, changes, apply_selection)
 	local actions = require("telescope.actions")
 	local pickers = require("telescope.pickers")
-	local Previewer = require("telescope.previewers.previewer")
+	local previewers = require("telescope.previewers")
 	local finders = require("telescope.finders")
 	local conf = require("telescope.config").values
 	local utils = require("telescope.utils")
 	local putils = require("telescope.previewers.utils")
 
-	local make_value = default_make_value
-	---@type Value[]
-	local values = {}
-	for index, entry in ipairs(documentChanges) do
-		local value = make_value(entry)
+	-- validate the table to have everything we need
+	for _, value in ipairs(changes) do
 		if type(value) ~= "table" then
 			error("'make_value' must return a table")
 		end
-		if value.title == nil then
+		if type(value.title) ~= "string" then
 			error("'make_value' must return a table containing a field 'title'")
 		end
-
-		value.index = index
-		value.entry = entry
-		value.type = "documentChanges"
-
-		table.insert(values, value)
-	end
-	for index, entry in ipairs(changes) do
-		local value = make_value(entry)
-		if type(value) ~= "table" then
-			error("'make_value' must return a table")
-		end
-		if value.title == nil then
-			error("'make_value' must return a table containing a field 'title'")
-		end
-
-		value.index = index
-		value.entry = entry
-		value.type = "changes"
-
-		table.insert(values, value)
 	end
 
-	local make_display = default_make_make_display(values)
+	local make_display = make_make_display(changes)
 
-	local buffers = {}
-	local term_ids = {}
-
-	local previewer = Previewer:new({
-		title = "Code Action Preview",
-		setup = function(_self)
+	local previewer = previewers.new_buffer_previewer({
+		setup = function(self)
 			-- pre-select all changes on picker creation
 			local prompt_bufnr = vim.api.nvim_get_current_buf()
 			actions.select_all(prompt_bufnr)
 			return {}
 		end,
-		teardown = function(self)
-			if not self.state then
-				return
-			end
-
-			self.state.winid = nil
-			self.state.bufnr = nil
-
-			for _, bufnr in ipairs(buffers) do
-				local term_id = term_ids[bufnr]
-				if term_id and job_is_running(term_id) then
-					vim.fn.jobstop(term_id)
-				end
-				utils.buf_delete(bufnr)
-			end
-
-			buffers = {}
-			term_ids = {}
+		---@param entry Entry
+		define_preview = function(self, entry, status)
+			local filetype = entry.value:preview(self.state.bufnr, self.state.winid, opts)
+			putils.highlighter(self.state.bufnr, filetype, {})
 		end,
-		---@param entry {value: Value}
-		preview_fn = function(self, entry, status)
-			local preview_winid = status.layout and status.layout.preview and status.layout.preview.winid or
-					status.preview_win
-
-			local do_preview = false
-			local bufnr = buffers[entry.value.index]
-			if not bufnr then
-				bufnr = vim.api.nvim_create_buf(false, true)
-				buffers[entry.value.index] = bufnr
-				do_preview = true
-
-				vim.api.nvim_win_set_option(preview_winid, "winhl", "Normal:TelescopePreviewNormal")
-				vim.api.nvim_win_set_option(preview_winid, "signcolumn", "no")
-				vim.api.nvim_win_set_option(preview_winid, "foldlevel", 100)
-				vim.api.nvim_win_set_option(preview_winid, "wrap", false)
-				vim.api.nvim_win_set_option(preview_winid, "scrollbind", false)
-			end
-
-			utils.win_set_buf_noautocmd(preview_winid, bufnr)
-			self.state.winid = preview_winid
-			self.state.bufnr = bufnr
-
-			if do_preview then
-				local preview = entry.value.entry:preview(opts)
-				preview = preview or { syntax = "", text = "preview not available" }
-
-				vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(preview.text, "\n", { plain = true }))
-				putils.highlighter(bufnr, preview.syntax, {})
-			end
-		end,
-		scroll_fn = function(self, direction)
-			if not self.state then
-				return
-			end
-
-			local count = math.abs(direction)
-			local term_id = term_ids[self.state.bufnr]
-			if term_id and job_is_running(term_id) then
-				local input = direction > 0 and "d" or "u"
-
-				local termcode = vim.api.nvim_replace_termcodes(count .. input, true, false, true)
-				vim.fn.chansend(term_id, termcode)
-			else
-				local input = direction > 0 and [[]] or [[]]
-
-				vim.api.nvim_win_call(self.state.winid, function()
-					vim.cmd([[normal! ]] .. count .. input)
-				end)
-			end
+		---@param entry Entry
+		---@return string
+		get_buffer_by_name = function(self, entry)
+			-- create a single buffer per file.
+			return entry.value:filename()
 		end,
 	})
 
 	local finder = finders.new_table({
-		results = values,
+		results = changes,
 		entry_maker = function(value)
 			return {
 				display = make_display,
-				ordinal = value.index .. value.title,
+				ordinal = value.title,
 				value = value,
 			}
 		end,
 	})
 
 	pickers.new(opts, {
-		prompt_title = "Code Actions",
+		prompt_title = "Edits to apply",
 		previewer = previewer,
 		finder = finder,
 		sorter = conf.generic_sorter(opts),
@@ -224,11 +126,11 @@ function M.apply_action(opts, documentChanges, changes, apply_selection)
 			map("i", "<c-a>", actions.toggle_all)
 
 			actions.select_default:replace(function()
-				local selections = get_selected_diffs(prompt_bufnr)
+				local selected_entries = get_selected_diffs(prompt_bufnr)
 
 				actions.close(prompt_bufnr)
 
-				apply_selection(selections)
+				apply_selection(selected_entries)
 			end)
 
 			return true
