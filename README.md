@@ -80,21 +80,6 @@ The picker comes pre-selected with all changes.
 | `<s-tab>` | toggle selection on current item and move to previous |
 | `<c-a>` | toggle all selections |
 
-## TODO
-
-* [x] implement selection
-* [x] auto-select all changes
-* [x] implement rename
-* [x] make it work with normal workspace edits
-* [x] don't rely on picker order selection
-* [x] allow disabling the preview
-* [x] provide configuration options
-* [ ] break-down by edit and not by file, one buffer for all changes in a file,
-  view-port shifts on selection, buffer contents updates based on selected
-  changes
-* [ ] Allow sorting list by token type that changes (e.g. var, class, comment)
-* [ ] Add tests
-
 ## FAQ
 
 * can I use a custom output tool like `delta`?
