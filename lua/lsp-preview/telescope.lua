@@ -91,6 +91,10 @@ function M.apply_action(opts, documentChanges, changes, apply_selection)
 	local putils = require("telescope.previewers.utils")
 
 	local make_value = default_make_value
+
+	-- This entire bit should happen in the conversion function in diff.lua
+	-- It should keep track of what change-type it is and also the location in the
+	-- original workspace_edit.
 	---@type Value[]
 	local values = {}
 	for index, payload in ipairs(documentChanges) do

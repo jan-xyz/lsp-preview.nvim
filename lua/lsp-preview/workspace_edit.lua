@@ -8,8 +8,9 @@ local M = {}
 ---Filters the workspace edit for the selected hunks and applies it.
 ---@param workspace_edit WorkspaceEdit
 ---@param offset_encoding string
----@return fun(selected_indices: {value: Value}[])
+---@return fun(selected_indices: Entry[])
 local make_apply_func = function(workspace_edit, offset_encoding, orig_apply_workspace_edits)
+	-- TODO: this whole function should move to diff.lua as part of the internal model conversion.
 	return function(selected_indices)
 		local documentChanges = {}
 		local changes = {}
@@ -19,7 +20,7 @@ local make_apply_func = function(workspace_edit, offset_encoding, orig_apply_wor
 				local edit = workspace_edit.documentChanges[index]
 				table.insert(documentChanges, edit)
 			elseif selection.value.type == "changes" then
-				local entry = selection.value.entry
+				local entry = selection.value.payload
 				---@cast entry Edit
 				local edit = workspace_edit.changes[entry.uri]
 				changes[entry.uri] = edit

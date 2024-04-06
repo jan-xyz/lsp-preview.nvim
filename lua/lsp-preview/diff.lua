@@ -197,12 +197,15 @@ end
 ---@param workspace_edit WorkspaceEdit
 ---@return Previewable[], Previewable[]
 function M.get_changes(workspace_edit, offset_encoding)
+	-- TODO: this function should also keep track of what type of change it is converting in the internal model
+	-- and it should keep track of the location in the original workspace_edit.
 	---@type Previewable[]
 	local documentChanges = {}
+	---@type Previewable[]
 	local changes = {}
 
 	if workspace_edit.documentChanges then
-		for _, change in ipairs(workspace_edit.documentChanges) do
+		for index, change in ipairs(workspace_edit.documentChanges) do
 			if change.kind == "rename" then
 				---@cast change RenameFile
 				table.insert(documentChanges, Rename.new(change, offset_encoding))
@@ -214,9 +217,8 @@ function M.get_changes(workspace_edit, offset_encoding)
 				table.insert(documentChanges, Delete.new(change, offset_encoding))
 			elseif not change.kind then
 				---@cast change TextDocumentEdit
-				table.insert(documentChanges, Edit.new("all", change.textDocument.uri, change.edits, offset_encoding))
-				for index, edit in ipairs(change.edits) do
-					table.insert(documentChanges, Edit.new(index, change.textDocument.uri, { edit }, offset_encoding))
+				for index2, edit in ipairs(change.edits) do
+					table.insert(documentChanges, Edit.new(index2, change.textDocument.uri, { edit }, offset_encoding))
 				end
 			else
 				vim.notify("unknown change kind")
@@ -224,7 +226,6 @@ function M.get_changes(workspace_edit, offset_encoding)
 		end
 	elseif workspace_edit.changes and not vim.tbl_isempty(workspace_edit.changes) then
 		for uri, edits in pairs(workspace_edit.changes) do
-			table.insert(changes, Edit.new("all", uri, edits, offset_encoding))
 			for index, edit in ipairs(edits) do
 				table.insert(documentChanges, Edit.new(index, uri, { edit }, offset_encoding))
 			end
