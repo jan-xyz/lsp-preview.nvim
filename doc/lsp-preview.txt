@@ -10,11 +10,13 @@ lsp-preview.setup({opts})                                *lsp-preview.setup()*
 change the default options.
 
 Parameters ~
-{opts} `(table|nil)` Module config table. See |lsp-preview.config|.
+{opts} `(table|nil)` Module config table.
+  - <preview> `(boolean)` - default for the `preview` flag. (default: false)
+  - <apply> `(boolean)` - skip the code action selection if there is only one. (default: true)
 
-lsp-preview.code_action({opts})    *lsp-preview.code_action()*
+lsp-preview.code_action({opts})                    *lsp-preview.code_action()*
 
-drop-in replacement for `vim.lsp.buf.code_action` which can previews the changes
+Drop-in replacement for `vim.lsp.buf.code_action` which can previews the changes
 and allows for pre-selection before applying it.
 
 Parameters ~
@@ -23,27 +25,23 @@ Parameters ~
 
 lsp-preview.code_action_preview({opts})    *lsp-preview.code_action_preview()*
 
-drop-in replacement for `vim.lsp.buf.code_action` which previews the changes
-and allows for pre-selection before applying it. It is a wrapper for
-|lsp-preview.code_action| with `preview = true`.
+It is a wrapper for |lsp-preview.code_action| with `preview = true`.
 
 Parameters ~
 {opts} `(table|nil)` tbd
 
-lsp-preview.rename({opts})    *lsp-preview.rename()*
+lsp-preview.rename({opts})                              *lsp-preview.rename()*
 
-drop-in replacement for `vim.lsp.buf.rename` which can previews the changes
+Drop-in replacement for `vim.lsp.buf.rename` which can previews the changes
 and allows for pre-selection before applying it.
 
 Parameters ~
 {opts} `(table|nil)` Module config table. See |lsp-preview.config|.
   - <preview> `(boolean)` - setting to activate the preview mode.
 
-lsp-preview.rename_preview({opts})    *lsp-preview.rename_preview()*
+lsp-preview.rename_preview({opts})              *lsp-preview.rename_preview()*
 
-drop-in replacement for `vim.lsp.buf.rename` which previews the changes
-and allows for pre-selection before applying it. It is a wrapper for
-|lsp-preview.rename| with `preview = true`.
+It is a wrapper for |lsp-preview.rename| with `preview = true`.
 
 Parameters ~
 {opts} `(table|nil)` tbd
