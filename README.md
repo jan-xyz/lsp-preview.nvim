@@ -30,7 +30,7 @@ lazy.nvim:
    "nvim-telescope/telescope.nvim",
    "nvim-lua/plenary.nvim",
   {
-    "echasnovski/mini.nvim",
+    "echasnovski/mini.diff",
     config = function()
      require("mini.diff").setup({})
     end,

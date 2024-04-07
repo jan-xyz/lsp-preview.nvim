@@ -1,0 +1,49 @@
+================================================================================
+Introduction                                                *lsp-preview.nvim*
+
+lsp-preview.nvim is a plugin to visualize, select and apply workspace changes
+from a language-server.
+
+--------------------------------------------------------------------------------
+lsp-preview.setup({opts})                                *lsp-preview.setup()*
+
+change the default options.
+
+Parameters ~
+{opts} `(table|nil)` Module config table. See |lsp-preview.config|.
+
+lsp-preview.code_action({opts})    *lsp-preview.code_action()*
+
+drop-in replacement for `vim.lsp.buf.code_action` which can previews the changes
+and allows for pre-selection before applying it.
+
+Parameters ~
+{opts} `(table|nil)` Module config table. See |lsp-preview.config|.
+  - <preview> `(boolean)` - setting to activate the preview mode.
+
+lsp-preview.code_action_preview({opts})    *lsp-preview.code_action_preview()*
+
+drop-in replacement for `vim.lsp.buf.code_action` which previews the changes
+and allows for pre-selection before applying it. It is a wrapper for
+|lsp-preview.code_action| with `preview = true`.
+
+Parameters ~
+{opts} `(table|nil)` tbd
+
+lsp-preview.rename({opts})    *lsp-preview.rename()*
+
+drop-in replacement for `vim.lsp.buf.rename` which can previews the changes
+and allows for pre-selection before applying it.
+
+Parameters ~
+{opts} `(table|nil)` Module config table. See |lsp-preview.config|.
+  - <preview> `(boolean)` - setting to activate the preview mode.
+
+lsp-preview.rename_preview({opts})    *lsp-preview.rename_preview()*
+
+drop-in replacement for `vim.lsp.buf.rename` which previews the changes
+and allows for pre-selection before applying it. It is a wrapper for
+|lsp-preview.rename| with `preview = true`.
+
+Parameters ~
+{opts} `(table|nil)` tbd
