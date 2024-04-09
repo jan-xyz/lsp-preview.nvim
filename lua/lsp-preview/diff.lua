@@ -308,6 +308,9 @@ function M.make_apply_func(workspace_edit, offset_encoding, orig_apply_workspace
 			workspace_edit.changes = compactChanges(changes)
 		end
 		orig_apply_workspace_edits(workspace_edit, offset_encoding)
+		-- Reset it to the original
+		---@diagnostic disable-next-line: duplicate-set-field
+		require("vim.lsp.util").apply_workspace_edit = orig_apply_workspace_edits
 	end
 end
 
