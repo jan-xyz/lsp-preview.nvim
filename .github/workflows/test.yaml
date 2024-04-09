@@ -1,0 +1,30 @@
+name: Test
+
+on: [push]
+
+jobs:
+
+  test:
+    name: Run Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: rhysd/action-setup-vim@v1
+        id: vim
+        with:
+          neovim: true
+          version: v0.9.5
+
+      - name: Prepare dependencies
+        run: |
+          mkdir -p ~/.local/share/nvim/site/pack/vendor/start
+          git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ~/.local/share/nvim/site/pack/vendor/start/plenary.nvim
+          git clone --depth 1 https://github.com/nvim-treesitter/nvim-treesitter ~/.local/share/nvim/site/pack/vendor/start/nvim-treesitter
+          git clone --depth 1 https://github.com/nvim-neotest/nvim-nio ~/.local/share/nvim/site/pack/vendor/start/nvim-nio
+          ln -s $(pwd) ~/.local/share/nvim/site/pack/vendor/start
+          nvim --headless -c 'TSInstallSync lua | quit'
+
+      - name: run test
+        run: |
+          nvim --version
+          make test

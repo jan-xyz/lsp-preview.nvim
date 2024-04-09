@@ -3,7 +3,6 @@
 -- for their work <3
 
 local lEdits = require("lsp-preview.buffer_edits")
-local minidiff = require("mini.diff")
 
 local M = {}
 
@@ -153,6 +152,7 @@ end
 
 ---@return string filetype
 function Edit:preview(bufnr, winid, opts)
+	local minidiff = require("mini.diff")
 	opts = opts or {}
 
 	-- set lines in buffer to the changed output
